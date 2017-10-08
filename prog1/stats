@@ -1,0 +1,200 @@
+#!/bin/bash
+datafilepath="datafile$$"
+tempCol="tempcolfile$$"
+tempRow="temprowfile$$"
+rowOutput="rowOutput$$"
+colOutput="colOutput$$"
+colOutput2="colOutput2$$"
+
+# $ kill -l lists available signals.
+# 1) SIGHUP 2) SIGINT 15) SIGTERM.
+trap "echo 'Signal received, killing script"$$"'; cleanUp; exit 1" 1 2 15
+
+function formatError 
+{
+
+	# Redirect stdout (1) to stderr (2) for command.
+	echo "./stats {-rows|-cols} [file]" 1>&2
+	cleanUp
+
+	exit 1
+
+}
+
+function cleanUp
+{
+
+	# Check the current directory for
+	# existence of temp files and delete.
+	if [ -f "datafile$$" ]
+	then
+		rm "$datafilepath"
+	fi
+
+	if [ -f "$tempCol" ]
+	then
+		rm "$tempCol"
+	fi
+
+	if [ -f "$tempRow" ]
+	then
+		rm "$tempRow"
+	fi
+
+	if [ -f "$rowOutput" ]
+	then 
+		rm "$rowOutput" 
+	fi
+
+	if [ -f "$colOutput" ]
+	then 
+		rm "$colOutput" 
+	fi
+
+	if [ -f "$colOutput2" ]
+	then 
+		rm "$colOutput2" 
+	fi
+
+}
+	
+function checkSwitch 
+{
+
+	if [[ $1 == -r* ]]
+	then
+		echo "Average Median" > "$rowOutput"; rowStats "$datafilepath" >> "$rowOutput"
+		cat "$rowOutput"
+
+	elif [[ $1 == -c* ]];
+	then
+		colStats "$datafilepath"
+	else
+		formatError
+	fi
+	
+}
+
+function rowStats
+{
+	lineNum=0
+	
+	# Parse each line(row) to calculate average and median values.
+	while read myLine
+	do
+
+		# Begin average calculation.
+		sum=0
+		count=0
+		itr=1
+		average=0
+		lineNum=$(expr $lineNum + 1)
+
+		for i in $myLine
+		do
+			num=$i
+			count=$(expr $count + 1)
+			sum=$(expr $sum + $num)
+		done
+
+		average=$(expr $(expr $sum + $(expr $count / 2)) / $count)
+
+		# Begin median calculation.
+		# Transform a single row into a sorted column.
+		echo "$myLine" | tr '\t' '\n' | sort -g > "$tempCol" 
+
+		# Determine if there are an even or odd number
+		# of values.
+		numLines=$(wc -l < "$tempCol")
+
+		# Calculate the row median.
+		if [ $(expr $numLines % 2) -eq 0 ]
+		then
+
+			# Even number of values,
+			# choose the larger of the two middle values.
+			medianLocate=$(expr $numLines / 2) 
+			medianLocate2=$(expr $medianLocate + 1)
+			median=$(cat "$tempCol" | tail -n $medianLocate | head -n 1)
+			median2=$(cat "$tempCol" | tail -n $medianLocate2 | head -n 1)
+
+			if [ $median2 -gt $median ]
+			then
+				median="$median2"
+			fi
+
+		else
+
+			# Odd number of values,
+			# choose the middle value.
+			medianLocate=$(expr $numLines / 2) 
+			medianLocate=$(expr $medianLocate + 1)
+			median=$(cat "$tempCol" | tail -n $medianLocate | head -n 1)
+		fi
+
+		# Output results.
+		echo -e "$average \t $median"
+	done < "$1"
+
+}
+
+function colStats
+{
+
+	# Determine total number of columns.
+	numCols=$(head -1 "$1" | wc -w)
+
+	# Convert columns into rows and append into a temporary file.
+	i=1
+
+	while [ $i -le $numCols ]
+	do
+		cut -f $i $1 | tr '\n' '\t' >> "$tempRow"
+		echo >> "$tempRow"
+		i=$(expr $i + 1)
+	done
+
+	# Perform calculation and format output.
+	rowStats "$tempRow" > "$colOutput"  
+	echo "Averages:" > "$colOutput2"
+	cut -f 1 $colOutput | tr '\n' '\t' >> "$colOutput2"
+	echo -e "\nMedians:" >> "$colOutput2"
+	cut -f 2 $colOutput | tr '\n' '\t' >> "$colOutput2"
+	echo >> "$colOutput2"
+	cat "$colOutput2"
+}
+
+# Determine the arguments given to the script when executed.
+# Is it from a file or stdin and are the switches correct?
+# Store the input data in the appropriate variable and 
+# execute appropriate commands to provide the desired output.
+
+if [ "$#" = "0" ]
+then
+	formatError
+elif [ "$#" = "1" ]
+then
+
+	# Switch is only argument, therefore,
+	# data input coming from stdin.
+	cat > "$datafilepath"
+elif [ "$#" = "2" ]
+then
+
+	# $2 is the input data as a file.
+	if [ -r $2 ]
+	then
+		datafilepath=$2
+	else
+		echo "./stats: cannot read $2" 1>&2
+		exit 1
+	fi
+
+fi
+
+checkSwitch "$1"
+cleanUp
+exit 0
+
+# Woke-een Fenix #
+
