@@ -155,13 +155,20 @@ function colStats
 	done
 
 	# Perform calculation and format output.
-	rowStats "$tempRow" > "$colOutput"  
-	echo "Averages:" > "$colOutput2"
-	cut -f 1 $colOutput | tr '\n' '\t' >> "$colOutput2"
-	echo -e "\nMedians:" >> "$colOutput2"
-	cut -f 2 $colOutput | tr '\n' '\t' >> "$colOutput2"
-	echo >> "$colOutput2"
-	cat "$colOutput2"
+	# [EXPLAIN BUG FIX]
+	if [ -f "$tempRow" ]
+	then
+		rowStats "$tempRow" > "$colOutput"  
+		echo "Averages:" > "$colOutput2"
+		cut -f 1 $colOutput | tr '\n' '\t' >> "$colOutput2"
+		echo -e "\nMedians:" >> "$colOutput2"
+		cut -f 2 $colOutput | tr '\n' '\t' >> "$colOutput2"
+		echo >> "$colOutput2"
+		cat "$colOutput2"
+	else
+		echo -e "Averages:\n\nMedians:"
+	fi
+
 }
 
 # Determine the arguments given to the script when executed.
@@ -189,7 +196,10 @@ then
 		echo "./stats: cannot read $2" 1>&2
 		exit 1
 	fi
+else
 
+	# There are too many arguments
+	formatError
 fi
 
 checkSwitch "$1"
