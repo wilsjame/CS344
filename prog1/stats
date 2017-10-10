@@ -1,10 +1,14 @@
 #!/bin/bash
+# James Wilson (wilsjame)
+# 9 Oct 2017, CS344 F'17
 datafilepath="datafile$$"
 tempCol="tempcolfile$$"
 tempRow="temprowfile$$"
 rowOutput="rowOutput$$"
 colOutput="colOutput$$"
 colOutput2="colOutput2$$"
+
+# Scroll down to find the start of the script, it is marked. 
 
 # $ kill -l lists available signals.
 # 1) SIGHUP 2) SIGINT 15) SIGTERM.
@@ -26,7 +30,7 @@ function cleanUp
 
 	# Check the current directory for
 	# existence of temp files and delete.
-	if [ -f "datafile$$" ]
+	if [ -f "datafile$$" ] # Mitigate deleting input file.
 	then
 		rm "$datafilepath"
 	fi
@@ -61,11 +65,13 @@ function cleanUp
 function checkSwitch 
 {
 
+	# Perform row statistics.
 	if [[ $1 == -r* ]]
 	then
 		echo "Average Median" > "$rowOutput"; rowStats "$datafilepath" >> "$rowOutput"
 		cat "$rowOutput"
 
+	# Perform column statistics.
 	elif [[ $1 == -c* ]];
 	then
 		colStats "$datafilepath"
@@ -155,7 +161,8 @@ function colStats
 	done
 
 	# Perform calculation and format output.
-	# [EXPLAIN BUG FIX]
+	# Bug fix: if $tempRow exists, input data is not empty.
+	# Otherwise, the input data is empty.
 	if [ -f "$tempRow" ]
 	then
 		rowStats "$tempRow" > "$colOutput"  
@@ -171,6 +178,7 @@ function colStats
 
 }
 
+# ##################  SCRIPT STARTS HERE ################# # 
 # Determine the arguments given to the script when executed.
 # Is it from a file or stdin and are the switches correct?
 # Store the input data in the appropriate variable and 
@@ -194,7 +202,9 @@ then
 		datafilepath=$2
 	else
 		echo "./stats: cannot read $2" 1>&2
+
 		exit 1
+
 	fi
 else
 
@@ -202,8 +212,10 @@ else
 	formatError
 fi
 
+# Call following functions to reach the desired output. 
 checkSwitch "$1"
 cleanUp
+
 exit 0
 
 # Woke-een Fenix #
