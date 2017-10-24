@@ -1,6 +1,6 @@
 /*********************************************************************
 ** Author: James G Wilson
-** Date: 23 October 2017
+** Date: 24 October 2017
 ** Description: Program 2 CS 344
 **
 ** wilsjame.buildrooms.c generates 7 different room files, one room
@@ -20,8 +20,10 @@
 #include <time.h>
 #include <stdlib.h>
 
+#define ROOMPOOL 10 // Number of rooms to choose from.
 #define MAXROOMS 7
 #define MAXCONNECTIONS 6
+
 
 struct Room
 {
@@ -33,15 +35,15 @@ struct Room
 
 /* Useful functions :-) */
 static void createRoomDir();
-static void shuffle(char (*)[250], int n);
+static void shuffle(char (*array)[250], int n);
 
 /* B^2 Room functions */
 static bool IsGraphFull();
-static void AddRandomConnection();
-static struct Room GetRandomRoom();
-static bool CanAddConnectionFrom(struct Room x);
+static void AddRandomConnection(struct Room* array);
+static struct Room* GetRandomRoom(struct Room* array);
+static bool CanAddConnectionFrom(struct Room* x);
 static bool ConnectionAlreadyExists(struct Room* x, struct Room* y);
-static void ConnectRoom(struct Room x, struct Room y);
+static void ConnectRoom(struct Room* x, struct Room* y);
 static bool IsSameRoom(struct Room* x, struct Room* y);
 
 int main(void)
@@ -51,7 +53,7 @@ int main(void)
 	struct Room rooms[MAXROOMS]; // Array of seven (blank) Room structs 
 
 	/* 2D array of roomNames[NUMBER_OF_STRINGS][STRING_LENGTH]. */
-	char roomNames[10][250] = 
+	char roomNames[ROOMPOOL][250] = 
 	{
 		"one", "two", "three", 
 		"four", "five", "six",
@@ -61,7 +63,7 @@ int main(void)
 
 	/* Shuffle the names. */
 	srand(time(NULL));
-	shuffle(roomNames, 10);
+	shuffle(roomNames, ROOMPOOL);
 	
 	/* Assign names types to rooms. */
 	for(i = 0; i < MAXROOMS; i++)
@@ -84,10 +86,25 @@ int main(void)
 
 	}
 
+	//TEST connections
+	ConnectRoom(&rooms[0], &rooms[1]);
+	printf("room: %s is connected to room %s \n", rooms[0].roomConnections[0]->name, rooms[1].roomConnections[0]->name);
+	if(ConnectionAlreadyExists(&rooms[0], &rooms[1]) == true)
+	{
+		printf("Connection already exists!\n");
+	}
+	else
+	{
+		printf("Huh connection dosen't exist.. bug D:\n");
+	}
+
+	//TEST get random room
+	printf("Random room name is: %s\n", GetRandomRoom(rooms)->name);
+	
 	//TEST 
 	for(i = 0; i < MAXROOMS; i++)
 	{
-		printf("room #%d name: %s type: %s \n", i + 1, rooms[i].name, rooms[i].type);
+		printf("room #%d name: %s type: %s outBoundConnections: %d \n", i + 1, rooms[i].name, rooms[i].type, rooms[i].numOutboundConnections);
 	}
 
 	/* Create all connections in graph. */
@@ -166,8 +183,12 @@ static bool isGraphFull()
 }
 
 /* Adds a random, valid outbound connection from a Room to another Room. */
-static void AddRandomConnection()
+static void AddRandomConnection(struct Room* array)
 {
+	/* Temporary pointers to the structs in rooms array */
+	struct room* roomA;
+	struct room* roomB;
+
 	// Do
 	// Get a random RoomA using GetRandomRoom()
 	// Get a random RoomB using GetRandomRoom()
@@ -177,49 +198,36 @@ static void AddRandomConnection()
 	// 	RoomA can have a connection, CanAddConnectionFrom() AND
 	// 	RoomB can have a connection, CanAddConnectionFrom() 
 	
-	/*
-	struct Room A; //Maybe a struct, maybe a global arrays of ints
-	struct Room B; 
-
-	while(true)
-	{
-		A = GetRandomRoom();
-
-		if(CanAddConnectionFrom(A) == true)
-		{
-			break;
-		}
-		
-	}
-
-	do
-	{
-		B = GetRandomRoom();
-	}
-	while(CanAddConnectionFrom(B) == false || IsSameRoom(A, B) == true || ConnectionAlreadyExists(A, B) == true);
-
-	ConnectRoom(A, B); // TODO: Add this connection to the real variables,
-	ConnectRoom(B, A); // because this A and B will be destroyed when this function terminates
-
-	*/
+	
 	return;
 
 }
 
 /* Returns a random Room, does NOT validate if connection can be added. */
-static struct Room GetRandomRoom()
+static struct Room* GetRandomRoom(struct Room* array)
 {
+	int randomIndex = rand() % MAXROOMS;
+
+	return &array[randomIndex];
+
 }
 
+//TODO test me? plz..?
 /* Returns true if a connection can be added from Room x (< 6 outbound connections), false otherwise */
-static bool CanAddConnectionFrom(struct Room x)
+static bool CanAddConnectionFrom(struct Room* x)
 {
-	// Check the number of outbound connections from Room x
-	// 	If it's less than 6 return true
-	// 	Else return false
+
+	if(x->numOutboundConnections < MAXCONNECTIONS)
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+
 }
 
-// TODO test me ;)
 /* Returns true if a connection from Room x to Room y already exists, false otherwise. */
 static bool ConnectionAlreadyExists(struct Room* x, struct Room*  y)
 {
@@ -240,9 +248,15 @@ static bool ConnectionAlreadyExists(struct Room* x, struct Room*  y)
 }
 
 /* Connects Rooms x and y together, does not check if this connection is valid. */
-static void ConnectRoom(struct Room x, struct Room y)
+static void ConnectRoom(struct Room* x, struct Room* y)
 {
-	// Connect Rooms x and y
+	x->roomConnections[x->numOutboundConnections] = y;
+	x->numOutboundConnections++;
+	y->roomConnections[y->numOutboundConnections] = x;
+	y->numOutboundConnections++;
+
+	return;
+	
 }
 
 /* Returns true if Rooms x and y are the same Room, false otherwise. */
