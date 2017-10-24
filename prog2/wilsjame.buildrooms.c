@@ -1,6 +1,6 @@
 /*********************************************************************
 ** Author: James G Wilson
-** Date: 21 October 2017
+** Date: 23 October 2017
 ** Description: Program 2 CS 344
 **
 ** wilsjame.buildrooms.c generates 7 different room files, one room
@@ -13,34 +13,147 @@
 ** connects to A. The room types are: START_ROOM, END_ROOM, and
 ** MID_ROOM. Naturally, there is only one START and END room. 
 *********************************************************************/
+#include <stdio.h>
+#include <string.h>
 #include <stdbool.h>
+#include <unistd.h>
+#include <time.h>
+#include <stdlib.h>
+
+#define MAXROOMS 7
+#define MAXCONNECTIONS 6
 
 struct Room
 {
-	int x;
+	char type[250];
+	char name[250];
+	int numOutboundConnections;
+	struct Room* roomConnections[MAXCONNECTIONS];
 };
 
+/* Useful functions :-) */
+static void createRoomDir();
+static void shuffle(char (*)[250], int n);
+
+/* B^2 Room functions */
 static bool IsGraphFull();
 static void AddRandomConnection();
 static struct Room GetRandomRoom();
 static bool CanAddConnectionFrom(struct Room x);
-static bool ConnectionAlreadyExists(x, y);
+static bool ConnectionAlreadyExists(struct Room* x, struct Room* y);
 static void ConnectRoom(struct Room x, struct Room y);
-static bool IsSameRoom(struct Room x, struct Room y);
+static bool IsSameRoom(struct Room* x, struct Room* y);
 
 int main(void)
 {
 
+	int i; // General use iterator.
+	struct Room rooms[MAXROOMS]; // Array of seven (blank) Room structs 
+
+	/* 2D array of roomNames[NUMBER_OF_STRINGS][STRING_LENGTH]. */
+	char roomNames[10][250] = 
+	{
+		"one", "two", "three", 
+		"four", "five", "six",
+		"seven", "eight", "nine",
+		"ten"
+	};
+
+	/* Shuffle the names. */
+	srand(time(NULL));
+	shuffle(roomNames, 10);
+	
+	/* Assign names types to rooms. */
+	for(i = 0; i < MAXROOMS; i++)
+	{
+		memset(rooms[i].name, '\0', 250);
+		strcpy(rooms[i].name, roomNames[i]);
+
+		if(i == 0)
+		{
+			strcpy(rooms[i].type, "START_ROOM");
+		}
+		else if(i == MAXROOMS - 1)
+		{
+			strcpy(rooms[MAXROOMS - 1].type, "END_ROOM");
+		}
+		else
+		{
+			strcpy(rooms[i].type, "MID_ROOM");
+		}
+
+	}
+
+	//TEST 
+	for(i = 0; i < MAXROOMS; i++)
+	{
+		printf("room #%d name: %s type: %s \n", i + 1, rooms[i].name, rooms[i].type);
+	}
+
 	/* Create all connections in graph. */
+	/*
 	while (IsGraphFull() == false)
 	{
 		AddRandomConnection();
 	}
+	*/
 
 	// Now all connections are created
 	// Output each room as a file to the proper directory
+	createRoomDir();
 	
 	return 0;
+
+}
+
+/* Creates the room directory, wilsjame.rooms.<PROCESS ID>/. */
+static void createRoomDir()
+{
+	int PID = getpid();
+	char PIDString[250];
+	memset(PIDString, '\0', 250);
+	char dirName[250] = "wilsjame.rooms.";
+
+	/* Convert the PID to a string */
+	sprintf(PIDString, "%d", PID);
+
+	/* Complete directory name */
+	strcat(dirName, PIDString);
+
+	/* mkdir() returns 0 upon successful completion, -1 otherwise. */
+	if(mkdir(dirName, 0755) == 0)
+	{
+		return;
+	}
+	else
+	{
+		printf("mkdir() failed :(\n");
+		return;
+	}
+
+}
+
+/* Arrange n elements of array in random order. */
+static void shuffle(char (*array)[250], int n)
+{
+	char temp[250];
+	memset(temp, '\0', 250);
+	
+	if(n > 1)
+	{
+		int i;
+
+		for(i = 0; i < n - 1; i++)
+		{
+			int j = i + rand() / (RAND_MAX / (n - i) + 1);
+			strcpy(temp, array[j]);
+			strcpy(array[j], array[i]);
+			strcpy(array[i], temp);
+		}
+
+	}
+
+	return;
 
 }
 
@@ -63,13 +176,39 @@ static void AddRandomConnection()
 	// 	Rooms are not connected, !ConnectionAlreadyExists() AND
 	// 	RoomA can have a connection, CanAddConnectionFrom() AND
 	// 	RoomB can have a connection, CanAddConnectionFrom() 
+	
+	/*
+	struct Room A; //Maybe a struct, maybe a global arrays of ints
+	struct Room B; 
+
+	while(true)
+	{
+		A = GetRandomRoom();
+
+		if(CanAddConnectionFrom(A) == true)
+		{
+			break;
+		}
+		
+	}
+
+	do
+	{
+		B = GetRandomRoom();
+	}
+	while(CanAddConnectionFrom(B) == false || IsSameRoom(A, B) == true || ConnectionAlreadyExists(A, B) == true);
+
+	ConnectRoom(A, B); // TODO: Add this connection to the real variables,
+	ConnectRoom(B, A); // because this A and B will be destroyed when this function terminates
+
+	*/
+	return;
+
 }
 
 /* Returns a random Room, does NOT validate if connection can be added. */
 static struct Room GetRandomRoom()
 {
-	// Do some random magic to select a Room
-	// 	Return it
 }
 
 /* Returns true if a connection can be added from Room x (< 6 outbound connections), false otherwise */
@@ -80,12 +219,24 @@ static bool CanAddConnectionFrom(struct Room x)
 	// 	Else return false
 }
 
+// TODO test me ;)
 /* Returns true if a connection from Room x to Room y already exists, false otherwise. */
-static bool ConnectionAlreadyExists(x, y)
+static bool ConnectionAlreadyExists(struct Room* x, struct Room*  y)
 {
-	// Check if a connection between the Rooms already exists
-	// 	If it exists return true
-	// 	Else return false
+	int i;
+	
+	for(i = 0; i < MAXCONNECTIONS; i++)
+	{
+
+		if(IsSameRoom(x->roomConnections[i], y))
+		{
+			return true;
+		}
+
+	}
+
+	return false;
+
 }
 
 /* Connects Rooms x and y together, does not check if this connection is valid. */
@@ -95,9 +246,16 @@ static void ConnectRoom(struct Room x, struct Room y)
 }
 
 /* Returns true if Rooms x and y are the same Room, false otherwise. */
-static bool IsSameRoom(struct Room x, struct Room y)
+static bool IsSameRoom(struct Room* x, struct Room* y)
 {
-	// Compare Rooms x and y 
-	//	If equal return true
-	//	Else return false
+
+	if(x == y)
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+
 }
