@@ -49,7 +49,7 @@ int main(void)
 {
 
 	int i; // General use iterator
-	struct Room rooms[MAXROOMS]; // Array of seven (blank) Room structs 
+	struct Room rooms[MAXROOMS]; // Array of MAXROOMS (blank) Room structs 
 
 	/* 2D array of roomNames[NUMBER_OF_STRINGS][STRING_LENGTH]. */
 	char roomNames[ROOMPOOL][250] = 
