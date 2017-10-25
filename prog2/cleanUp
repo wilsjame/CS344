@@ -1,0 +1,4 @@
+#!/bin/bash
+
+echo "Trash compactor *chomp* *chomp*"
+rm -rf wilsjame.rooms.*
