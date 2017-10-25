@@ -16,6 +16,23 @@
 #define MAXROOMS 7
 #define MAXCONNECTIONS 6
 
+struct Room
+{
+	char type[250];
+	char name[250];
+	int numOutboundConnections;
+	struct Room* roomConnections[MAXCONNECTIONS];
+};
+
+/* Useful functions =^D */
+static void getRoomDir(char* roomDirName);
+
+//TODO
+//read files into array of room structs
+//design game loop structure
+//design menu input functionality
+//add time feature using threads
+
 /*** Files store rooms in exactly this form ***
  
 ROOM NAME: Workaholics 
@@ -26,26 +43,21 @@ ROOM TYPE: START_ROOM
 
 */
 
-struct Room
-{
-	char type[250];
-	char name[250];
-	int numOutboundConnections;
-	struct Room* roomConnections[MAXCONNECTIONS];
-};
-
-//TODO
-//read files into array of room structs
-//design game loop structure
-//design menu input functionality
-//add time feature using threads
-
 int main(void)
+{
+	char roomDirName[250]; memset(roomDirName, '\0', sizeof(roomDirName)); 
+	getRoomDir(roomDirName);
+
+	printf("\nroomDirName is: %s\n",roomDirName);
+
+	return 0;
+	
+}
+
+static void getRoomDir(char* newestDirName)
 {
 	int newestDirTime = -1; // Modified timestamp of newest subdir examined.
 	char targetDirPrefix[32] = "wilsjame.rooms."; // Prefix to look for.
-	char newestDirName[250]; // Holds name of newest dir containing prefix.
-	memset(newestDirName, '\0', sizeof(newestDirName));
 
 	/* Create directory stream. */
 	DIR* dirToCheck; 
@@ -55,7 +67,6 @@ int main(void)
 
 	/* stat holds information about a named file (subdir in this case) */
 	struct stat dirAttributes; 
-
 
 	/* Open a directory stream of directory this program was run in. */
 	dirToCheck = opendir("."); 
@@ -96,7 +107,7 @@ int main(void)
 
 	printf("Newest entry found is: %s\n", newestDirName);
 
-	return 0;
-
+	return;
+	
 }
 
