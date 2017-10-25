@@ -86,31 +86,16 @@ int main(void)
 
 	}
 
-	//TEST connections
-	ConnectRoom(&rooms[0], &rooms[1]);
-	printf("room: %s is connected to room %s \n", rooms[0].roomConnections[0]->name, rooms[1].roomConnections[0]->name);
-	if(ConnectionAlreadyExists(&rooms[0], &rooms[1]) == true)
-	{
-		printf("Connection already exists!\n");
-	}
-	else
-	{
-		printf("Huh connection dosen't exist.. bug D:\n");
-	}
-
-	//TEST get random room
-	printf("Random room name is: %s\n", GetRandomRoom(rooms)->name);
-	
-	//TEST 
-	for(i = 0; i < MAXROOMS; i++)
-	{
-		printf("room #%d name: %s type: %s outBoundConnections: %d \n", i + 1, rooms[i].name, rooms[i].type, rooms[i].numOutboundConnections);
-	}
-
 	/* Create all connections in graph. */
 	while (IsGraphFull(rooms) == false)
 	{
 		AddRandomConnection(rooms);
+	}
+
+	//TEST 
+	for(i = 0; i < MAXROOMS; i++)
+	{
+		printf("room #%d name: %s type: %s outBoundConnections: %d \n", i + 1, rooms[i].name, rooms[i].type, rooms[i].numOutboundConnections);
 	}
 
 	// Now all connections are created
@@ -180,7 +165,7 @@ static bool IsGraphFull(struct Room* array)
 	for(i = 0; i < MAXROOMS; i++)
 	{
 
-		if(array[i].numOutboundConnections < 3 && array[i].numOutboundConnections > MAXCONNECTIONS)
+		if(array[i].numOutboundConnections < 3)
 		{
 			
 			return false;
@@ -199,6 +184,8 @@ static void AddRandomConnection(struct Room* array)
 	/* Temporary pointers to the structs in rooms array */
 	struct Room* roomA;
 	struct Room* roomB;
+	roomA = GetRandomRoom(array);
+	roomB = GetRandomRoom(array);
 
 	do
 	{
@@ -206,14 +193,14 @@ static void AddRandomConnection(struct Room* array)
 		roomB = GetRandomRoom(array);
 
 	/* Keep getting two random rooms while:
-	 * 	RoomA cannot have a connection AND
-	 * 	RoomB cannot have a connection AND
-	 * 	A connection between them exists AND
+	 * 	RoomA cannot have a connection OR
+	 * 	RoomB cannot have a connection OR
+	 * 	A connection between them exists OR
 	 * 	They are the same room.
 	 */
-	}while(CanAddConnectionFrom(roomA) == false && 
-		CanAddConnectionFrom(roomA) == false && 
-		ConnectionAlreadyExists(roomA, roomB) == true && 
+	}while(CanAddConnectionFrom(roomA) == false || 
+		CanAddConnectionFrom(roomB) == false ||
+		ConnectionAlreadyExists(roomA, roomB) == true ||
 		IsSameRoom(roomA, roomB) == true); 
 
 	/* Now we have two rooms able to connect */
@@ -238,11 +225,15 @@ static bool CanAddConnectionFrom(struct Room* x)
 
 	if(x->numOutboundConnections < MAXCONNECTIONS)
 	{
+
 		return true;
+
 	}
 	else
 	{
+
 		return false;
+
 	}
 
 }
