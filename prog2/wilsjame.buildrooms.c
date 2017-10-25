@@ -98,7 +98,7 @@ int main(void)
 
 }
 
-// TODO Poo Putt Platter of Stringhetti :O clean this function up.
+// TODO Poo Putt Platter of Stringhetti oh my! Clean this function up.
 /* Creates the room directory, wilsjame.rooms.<PROCESS ID>/. */
 static void createRoomDir(struct Room* array)
 {
@@ -240,20 +240,13 @@ static void AddRandomConnection(struct Room* array)
 	/* Temporary pointers to the structs in rooms array */
 	struct Room* roomA;
 	struct Room* roomB;
-	roomA = GetRandomRoom(array);
-	roomB = GetRandomRoom(array);
 
 	do
 	{
 		roomA = GetRandomRoom(array);
 		roomB = GetRandomRoom(array);
 
-	/* Keep getting two random rooms while:
-	 * 	RoomA cannot have a connection OR
-	 * 	RoomB cannot have a connection OR
-	 * 	A connection between them exists OR
-	 * 	They are the same room.
-	 */
+	/* Keep getting two random rooms until pair is valid. */
 	}while(CanAddConnectionFrom(roomA) == false || 
 		CanAddConnectionFrom(roomB) == false ||
 		ConnectionAlreadyExists(roomA, roomB) == true ||
@@ -275,7 +268,7 @@ static struct Room* GetRandomRoom(struct Room* array)
 
 }
 
-/* Returns true if a connection can be added from Room x (< 6 outbound connections), false otherwise */
+/* Returns true if a connection can be added from Room x (< MAXCONNECTIONS outbound connections), false otherwise */
 static bool CanAddConnectionFrom(struct Room* x)
 {
 
