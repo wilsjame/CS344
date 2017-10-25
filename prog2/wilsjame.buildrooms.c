@@ -24,7 +24,6 @@
 #define MAXROOMS 7
 #define MAXCONNECTIONS 6
 
-
 struct Room
 {
 	char type[250];
@@ -34,10 +33,10 @@ struct Room
 };
 
 /* Useful functions :-) */
-static void createRoomDir();
+static void createRoomDir(struct Room* array);
 static void shuffle(char (*array)[250], int n);
 
-/* B^2 Room functions */
+/* B^2 room functions */
 static bool IsGraphFull(struct Room* array);
 static void AddRandomConnection(struct Room* array);
 static struct Room* GetRandomRoom(struct Room* array);
@@ -49,7 +48,7 @@ static bool IsSameRoom(struct Room* x, struct Room* y);
 int main(void)
 {
 
-	int i; // General use iterator.
+	int i; // General use iterator
 	struct Room rooms[MAXROOMS]; // Array of seven (blank) Room structs 
 
 	/* 2D array of roomNames[NUMBER_OF_STRINGS][STRING_LENGTH]. */
@@ -92,43 +91,99 @@ int main(void)
 		AddRandomConnection(rooms);
 	}
 
-	//TEST 
-	for(i = 0; i < MAXROOMS; i++)
-	{
-		printf("room #%d name: %s type: %s outBoundConnections: %d \n", i + 1, rooms[i].name, rooms[i].type, rooms[i].numOutboundConnections);
-	}
-
-	// Now all connections are created
-	// Output each room as a file to the proper directory
-	createRoomDir();
+	/* Output each room's info as a file to the proper directory */
+	createRoomDir(rooms);
 	
 	return 0;
 
 }
 
+// TODO Poo Putt Platter of Stringhetti :O clean this function up.
 /* Creates the room directory, wilsjame.rooms.<PROCESS ID>/. */
-static void createRoomDir()
+static void createRoomDir(struct Room* array)
 {
+	int roomItr;
+	int connectionItr;
 	int PID = getpid();
-	char PIDString[250];
-	memset(PIDString, '\0', 250);
-	char dirName[250] = "wilsjame.rooms.";
 
-	/* Convert the PID to a string */
+	char connectionItrString[250]; memset(connectionItrString, '\0', 250);
+	char PIDString[250]; memset(PIDString, '\0', 250);
+	char fileName[250]; memset(fileName, '\0', 250);
+	char nameTitle[250]; memset(nameTitle, '\0', 250);
+	char connectionTitle[250]; memset(connectionTitle, '\0', 250);
+	char typeTitle[250]; memset(typeTitle, '\0', 250);
+	char dirName[250] = "wilsjame.rooms.";
+	char fileExtension[250] = "_room";
+
+	FILE* fileStream;
+
+	/* Convert the PID to a string. */
 	sprintf(PIDString, "%d", PID);
 
-	/* Complete directory name */
+	/* Complete directory name. */
 	strcat(dirName, PIDString);
 
 	/* mkdir() returns 0 upon successful completion, -1 otherwise. */
-	if(mkdir(dirName, 0755) == 0)
-	{
-		return;
-	}
-	else
+	if(mkdir(dirName, 0755) != 0)
 	{
 		printf("mkdir() failed :(\n");
-		return;
+		exit(1);
+	}
+	
+	/* Write room data to files. */
+	for(roomItr = 0; roomItr < MAXROOMS; roomItr++)
+	{
+
+		/* Set row titles. */
+		strcpy(nameTitle, "ROOM NAME: "); 
+		strcpy(typeTitle, "ROOM TYPE: ");
+
+		/* Create file destination. */
+		strcat(fileName, "./");
+		strcat(fileName, dirName);
+		strcat(fileName, "/");
+		
+		/* Open file for writing. */
+		strcat(fileName, array[roomItr].name);
+		strcat(fileName, fileExtension);
+		fileStream = fopen(fileName, "w");
+
+		/* Write room name. */
+		strcat(nameTitle, array[roomItr].name);
+		fprintf(fileStream, "%s\n", nameTitle);
+
+		/* Write room connections. */
+		for(connectionItr = 0; connectionItr < array[roomItr].numOutboundConnections; connectionItr++)
+		{
+
+			/* Set row title. */
+			strcpy(connectionTitle, "CONNECTION ");
+
+			/* Convert connection # to a string. */
+			sprintf(connectionItrString, "%d", connectionItr + 1);
+			strcat(connectionItrString, ": ");
+			strcat(connectionTitle, connectionItrString);
+
+			/* Write room connection. */
+			strcat(connectionTitle, array[roomItr].roomConnections[connectionItr]->name);
+			fprintf(fileStream, "%s\n", connectionTitle);
+
+			/* Clear strings for next loop iteration. */
+			memset(connectionItrString, '\0', 250);
+			memset(connectionTitle, '\0', 250);
+		}
+
+		/* Write room type. */
+		strcat(typeTitle, array[roomItr].type);
+		fprintf(fileStream, "%s\n", typeTitle);
+
+		/* Clear strings for next loop iteration */
+		memset(fileName, '\0', 250);
+		memset(nameTitle, '\0', 250);
+		memset(typeTitle, '\0', 250);
+
+		/* Close file until next loop iteration. */
+		fclose(fileStream);
 	}
 
 }
@@ -181,6 +236,7 @@ static bool IsGraphFull(struct Room* array)
 /* Adds a random, valid outbound connection from a Room to another Room. */
 static void AddRandomConnection(struct Room* array)
 {
+
 	/* Temporary pointers to the structs in rooms array */
 	struct Room* roomA;
 	struct Room* roomB;
@@ -248,7 +304,9 @@ static bool ConnectionAlreadyExists(struct Room* x, struct Room*  y)
 
 		if(IsSameRoom(x->roomConnections[i], y))
 		{
+
 			return true;
+
 		}
 
 	}
@@ -275,11 +333,15 @@ static bool IsSameRoom(struct Room* x, struct Room* y)
 
 	if(x == y)
 	{
+
 		return true;
+
 	}
 	else
 	{
+
 		return false;
+
 	}
 
 }
