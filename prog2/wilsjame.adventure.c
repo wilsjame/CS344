@@ -26,6 +26,7 @@ struct Room
 
 /* Useful functions =^D */
 static void getRoomDir(char* roomDirName);
+static void getRoomData(struct Room* array, char* roomDirName);
 
 //TODO
 //read files into array of room structs
@@ -45,15 +46,21 @@ ROOM TYPE: START_ROOM
 
 int main(void)
 {
+	struct Room rooms[MAXROOMS]; // Array of MAXROOMS (blank) Room structs
 	char roomDirName[250]; memset(roomDirName, '\0', sizeof(roomDirName)); 
-	getRoomDir(roomDirName);
 
-	printf("\nroomDirName is: %s\n",roomDirName);
+	getRoomDir(roomDirName);
+	getRoomData(rooms, roomDirName);
+
+	/* Parse rooms directory reading rooms data. */
+
+
 
 	return 0;
 	
 }
 
+/* Assigns the name of the most recent rooms subdirectory to the input string. */
 static void getRoomDir(char* newestDirName)
 {
 	int newestDirTime = -1; // Modified timestamp of newest subdir examined.
@@ -78,6 +85,17 @@ static void getRoomDir(char* newestDirName)
 		/* Check each entry in directory. */
 		while((fileInDir = readdir(dirToCheck)) != NULL) 
 		{
+
+			/* Ignore directory pointers. */
+			if(!strcmp(fileInDir->d_name, "."))
+			{
+				continue;
+			}
+
+			if(!strcmp(fileInDir->d_name, ".."))
+			{
+				continue;
+			}
 
 			/* Check if the entry has the prefix. */
 			if(strstr(fileInDir->d_name, targetDirPrefix) != NULL)
@@ -109,5 +127,71 @@ static void getRoomDir(char* newestDirName)
 
 	return;
 	
+}
+
+/* Parses room files in subdirectory and stores data in rooms array. */
+static void getRoomData(struct Room* array, char* roomDirName)
+{
+	FILE* fileStream;
+	char roomFilePath[250]; memset(roomFilePath, '\0', sizeof(roomFilePath));
+
+	/* Complete room directory path name. */
+	char roomDirNamePath[250] = "./";
+	strcat(roomDirNamePath, roomDirName);
+
+	/* Create directory stream. */
+	DIR* dirToCheck; 
+
+	/* dirent holds directory entires returned by readdir(). */
+	struct dirent* fileInDir; 
+
+	/* Open a directory stream of directory this program was run in. */
+	dirToCheck = opendir(roomDirNamePath); 
+
+	/* Step through it. */
+	if(dirToCheck > 0) // Make sure current directory could be opened.
+	{
+
+		/* Check each entry in directory. */
+		while((fileInDir = readdir(dirToCheck)) != NULL) 
+		{
+
+			/* Ignore directory pointers. */
+			if(!strcmp(fileInDir->d_name, "."))
+			{
+				continue;
+			}
+
+			if(!strcmp(fileInDir->d_name, ".."))
+			{
+				continue;
+			}
+
+			/* Create room file path name. */
+			strcpy(roomFilePath, "./");
+			strcat(roomFilePath, roomDirName);
+			strcat(roomFilePath, "/");
+			strcat(roomFilePath, fileInDir->d_name);
+
+			/* Open room file for reading. */
+			printf("Opening file: %s for reading.\n", roomFilePath);
+			fileStream = fopen(roomFilePath, "r");
+
+			/* Clear string(s) for next loop iteration. */
+			memset(roomFilePath, '\0', sizeof(roomFilePath));
+
+			/* Close file until next loop iteration. */
+			fclose(fileStream);
+
+			//TODO
+
+		}
+
+	}
+
+	/* Close directory stream. */
+	closedir(dirToCheck);
+
+	return;
 }
 
