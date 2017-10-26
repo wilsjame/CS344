@@ -21,7 +21,7 @@ struct Room
 	char type[250];
 	char name[250];
 	int numOutboundConnections;
-	struct Room* roomConnections[MAXCONNECTIONS];
+	char roomConnections[MAXCONNECTIONS][250];
 };
 
 /* Useful functions =^D */
@@ -29,32 +29,37 @@ static void getRoomDir(char* roomDirName);
 static void getRoomData(struct Room* array, char* roomDirName);
 
 //TODO
-//read files into array of room structs
+// [DONE] read files into array of room structs
 //design game loop structure
 //design menu input functionality
 //add time feature using threads
 
-/*** Files store rooms in exactly this form ***
- 
-ROOM NAME: Workaholics 
-CONNECTION 1: EyeKnow
-CONNECTION 2: Common
-CONNECTION 3: Quavo
-ROOM TYPE: START_ROOM
-
-*/
-
 int main(void)
 {
+	int i; // General use iterator
+	int connectionItr;
 	struct Room rooms[MAXROOMS]; // Array of MAXROOMS (blank) Room structs
 	char roomDirName[250]; memset(roomDirName, '\0', sizeof(roomDirName)); 
 
+	/* Get the room subdirector's name. */
 	getRoomDir(roomDirName);
+
+	/* Parse room files and store room data in rooms struct array. */
 	getRoomData(rooms, roomDirName);
 
-	/* Parse rooms directory reading rooms data. */
+	//TEST
+	printf("rooms array data:\n");
+	for(i = 0; i < MAXROOMS; i++)
+	{
+		printf("Room Name: %s\n", rooms[i].name);
 
+		for(connectionItr = 0; connectionItr < rooms[i].numOutboundConnections; connectionItr++)
+		{
+			printf("CONNECTION: %s\n", rooms[i].roomConnections[connectionItr]);
+		}
 
+		printf("Room Type: %s\n", rooms[i].type);
+	}
 
 	return 0;
 	
@@ -100,7 +105,6 @@ static void getRoomDir(char* newestDirName)
 			/* Check if the entry has the prefix. */
 			if(strstr(fileInDir->d_name, targetDirPrefix) != NULL)
 			{
-				printf("Found the prefix: %s\n", fileInDir->d_name);
 
 				/* Get attributes of entry into stat struct. */
 				stat(fileInDir->d_name, &dirAttributes);
@@ -112,8 +116,6 @@ static void getRoomDir(char* newestDirName)
 				newestDirTime = (int)dirAttributes.st_mtime;
 				memset(newestDirName, '\0', sizeof(newestDirName));
 				strcpy(newestDirName, fileInDir->d_name);
-				printf("Newer subdir: %s, new time: %d\n",
-					fileInDir->d_name, newestDirTime);
 			}
 
 		}
@@ -123,7 +125,7 @@ static void getRoomDir(char* newestDirName)
 	/* Close directory stream. */
 	closedir(dirToCheck);
 
-	printf("Newest entry found is: %s\n", newestDirName);
+	printf("Newest rooms directory found is: %s\n", newestDirName);
 
 	return;
 	
@@ -132,8 +134,16 @@ static void getRoomDir(char* newestDirName)
 /* Parses room files in subdirectory and stores data in rooms array. */
 static void getRoomData(struct Room* array, char* roomDirName)
 {
+	int roomItr = 0;
+	int connectionItr;
+
 	FILE* fileStream;
+
 	char roomFilePath[250]; memset(roomFilePath, '\0', sizeof(roomFilePath));
+	char roomRow[250]; memset(roomRow, '\0', sizeof(roomRow));
+	char rowTitle_1[250]; memset(rowTitle_1, '\0', sizeof(rowTitle_1));
+	char rowTitle_2[250]; memset(rowTitle_2, '\0', sizeof(rowTitle_2));
+	char roomInfo[250]; memset(roomInfo, '\0', sizeof(roomInfo));
 
 	/* Complete room directory path name. */
 	char roomDirNamePath[250] = "./";
@@ -174,17 +184,65 @@ static void getRoomData(struct Room* array, char* roomDirName)
 			strcat(roomFilePath, fileInDir->d_name);
 
 			/* Open room file for reading. */
-			printf("Opening file: %s for reading.\n", roomFilePath);
 			fileStream = fopen(roomFilePath, "r");
+
+			/* Reset room connection iterator. */
+			connectionItr = 0;
+
+			/* Parse each line of room file. */
+			while(fgets(roomRow, sizeof(roomRow), fileStream) != NULL)
+			{
+				
+				/* Store contents of line into seperate strings. */
+				sscanf(roomRow, "%s %s %s", rowTitle_1, rowTitle_2, roomInfo);
+
+				/* Determine room name, type, or connections. */
+				if(strcmp("ROOM", rowTitle_1) == 0) 
+				{
+
+					if(strcmp("NAME:", rowTitle_2) == 0)
+					{
+
+						/* Store room's name. */
+						memset(array[roomItr].name, '\0', 250);
+						strcpy(array[roomItr].name, roomInfo);
+					}
+					else
+					{
+
+						/* Store room's type. */
+						memset(array[roomItr].type, '\0', 250);
+						strcpy(array[roomItr].type, roomInfo);
+					}
+
+				}
+				else
+				{
+
+					/* Store room's connections. */
+					memset(array[roomItr].roomConnections[connectionItr], '\0', 250);
+					strcpy(array[roomItr].roomConnections[connectionItr], roomInfo);
+
+					/* Keep a running connection count. */
+					array[roomItr].numOutboundConnections++;
+					connectionItr++;
+				}
+
+				/* Clear string for next line parse. */
+				memset(roomRow, '\0', sizeof(roomRow));
+				memset(rowTitle_1, '\0', sizeof(rowTitle_1));
+				memset(rowTitle_2, '\0', sizeof(rowTitle_2));
+				memset(roomInfo, '\0', sizeof(roomInfo));
+			}
+			
+			/* Keep a running room count. */
+			roomItr++;
 
 			/* Clear string(s) for next loop iteration. */
 			memset(roomFilePath, '\0', sizeof(roomFilePath));
 
 			/* Close file until next loop iteration. */
 			fclose(fileStream);
-
-			//TODO
-
 		}
 
 	}
@@ -193,5 +251,6 @@ static void getRoomData(struct Room* array, char* roomDirName)
 	closedir(dirToCheck);
 
 	return;
+
 }
 
