@@ -70,18 +70,20 @@ int main(void)
 	/* Parse room files and store room data in rooms struct array. */
 	getRoomData(rooms, roomDirName);
 
-	/* Display starting location. */
+	/* Get starting location. */
 	currentLocation = getStartRoomIndex(rooms);
-	printf("CURRENT LOCATION: %s\n", rooms[currentLocation].name);
-	displayConnections(rooms, currentLocation);
-
+	
 	/* Begin game loop. */ 
-	//TODO Cleanup
+	//TODO make as own function.
 	while(1)
 	{
 
 		/* Reset before each iteration. */
 		validInput = false;
+
+		/* Display current location. */
+		printf("CURRENT LOCATION: %s\n", rooms[currentLocation].name);
+		displayConnections(rooms, currentLocation);
 
 		/* Have user input a valid connection. */
 		while(validInput == false)
@@ -105,6 +107,8 @@ int main(void)
 								(void*)&writeTime, 
 								NULL );
 			}
+
+			/* Check if user entered a valid outbound room. */
 			else
 			{
 
@@ -119,6 +123,7 @@ int main(void)
 
 				}
 
+				/* User did not enter a valid outbound room. */
 				if(validInput == false)
 				{
 					printf("\n\nHUH? I DON'T UNDERSTAND THAT ROOM. TRY AGAIN.\n\n\n");
@@ -128,41 +133,40 @@ int main(void)
 
 					/* Display possible connections. */
 					displayConnections(rooms, currentLocation);
-
 				}
 
 			}
 
-			/* Move current location to chosen room. */
-			for(i = 0; i < MAXROOMS; i++)
+		}
+
+		/* Now we have a valid move, Move current location to chosen room. */
+		for(i = 0; i < MAXROOMS; i++)
+		{
+
+			/* Find room that matches the users valid next room choice. */
+			if(strcmp(userInput, rooms[i].name) == 0)
 			{
 
-				/* Find room that matches the users valid next room choice. */
-				if(strcmp(userInput, rooms[i].name) == 0)
+				/* Enter the room */
+				currentLocation = i;
+
+				/* Incrememnt steps taken. */
+				stepCount++;
+
+				/* Update path history. */
+				strcat(pathHistory, userInput);
+				strcat(pathHistory, "\n");
+
+				/* Check if end room. */
+				if(strcmp("END_ROOM", rooms[currentLocation].type) == 0)
 				{
+					printf("\n\nYOU HAVE FOUND THE END ROOM. CONGRATULATIONS!\n");
+					printf("YOU TOOK %d STEPS. YOUR PATH TO VICTORY WAS:\n%s", stepCount, pathHistory);
 
-					/* Enter the room */
-					currentLocation = i;
+					/* Unlock mutex before exiting. */
+					pthread_mutex_unlock(&myMutex);
 
-					/* Incrememnt steps taken. */
-					stepCount++;
-
-					/* Update path history. */
-					strcat(pathHistory, userInput);
-					strcat(pathHistory, "\n");
-
-					/* Check if end room. */
-					if(strcmp("END_ROOM", rooms[currentLocation].type) == 0)
-					{
-						printf("\n\nYOU HAVE FOUND THE END ROOM. CONGRATULATIONS!\n");
-						printf("YOU TOOK %d STEPS. YOUR PATH TO VICTORY WAS:\n%s", stepCount, pathHistory);
-
-						/* Unlock mutex before exiting. */
-						pthread_mutex_unlock(&myMutex);
-
-						return 0;
-
-					}
+					return 0;
 
 				}
 
@@ -170,11 +174,6 @@ int main(void)
 
 		}
 
-		/* Set up menu for another move. */
-		printf("\n\nCURRENT LOCATION: %s\n", rooms[currentLocation].name);
-
-		/* Display possible connections. */
-		displayConnections(rooms, currentLocation);
 	}
 
 }
