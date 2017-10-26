@@ -32,7 +32,7 @@ struct Room
 	struct Room* roomConnections[MAXCONNECTIONS];
 };
 
-/* Useful functions :-) */
+/* Useful functions */
 static void createRoomDir(struct Room* array);
 static void shuffle(char (*array)[250], int n);
 
@@ -98,7 +98,7 @@ int main(void)
 
 }
 
-// TODO Poo Putt Platter of Stringhetti oh my! Clean this function up.
+// TODO Clean this function up.
 /* Creates the room directory, wilsjame.rooms.<PROCESS ID>/. */
 static void createRoomDir(struct Room* array)
 {

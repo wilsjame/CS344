@@ -16,6 +16,7 @@
 #include <stdbool.h>
 #include <pthread.h>
 #include <time.h>
+#include <assert.h>
 
 #define MAXROOMS 7
 #define MAXCONNECTIONS 6
@@ -28,21 +29,31 @@ struct Room
 	char roomConnections[MAXCONNECTIONS][250];
 };
 
-/* Useful functions =^D */
+/* Useful functions. */
 static void getRoomDir(char* roomDirName);
 static void getRoomData(struct Room* array, char* roomDirName);
 static void getUserInput(char* userInput);
 static int getStartRoomIndex(struct Room* array);
 static void displayConnections(struct Room* array, int currentLocation);
-static void writeTime();
+static void* writeTime();
+static void printTimeFile();
 
-//TODO
-//add time feature using threads
-//check output is correct format
-//modularize game loop
+pthread_mutex_t myMutex = PTHREAD_MUTEX_INITIALIZER;
 
 int main(void)
 {
+
+	/* Create thread for writeTime() */
+	int resultInt;
+	pthread_t myThreadID;
+	pthread_mutex_lock(&myMutex);
+
+	resultInt = pthread_create( &myThreadID, 
+					NULL,
+					(void*)&writeTime, 
+					NULL );
+	
+	/* Other variables. */
 	int i; // General use iterator
 	int currentLocation;
 	bool validInput;
@@ -65,6 +76,7 @@ int main(void)
 	displayConnections(rooms, currentLocation);
 
 	/* Begin game loop. */ 
+	//TODO Cleanup
 	while(1)
 	{
 
@@ -76,49 +88,81 @@ int main(void)
 		{
 			getUserInput(userInput);
 
-			/* Check all outbound connections from the current room. */
-			for(i = 0; i < rooms[currentLocation].numOutboundConnections; i++)
+			/* Begin writeTime() threading. */
+			if(strcmp(userInput, "time") == 0)
+			{
+				pthread_mutex_unlock(&myMutex); // Unlock main thread.
+				pthread_join(myThreadID, NULL); // Wait for time thread to finish.
+
+				/* Print time from file. */
+				printTimeFile();
+
+				pthread_mutex_lock(&myMutex); // Lock main thread before creating new time thread. 
+
+				/* Create new time thread. */
+				resultInt = pthread_create( &myThreadID, 
+								NULL,
+								(void*)&writeTime, 
+								NULL );
+			}
+			else
 			{
 
-				if(strcmp(userInput, rooms[currentLocation].roomConnections[i]) == 0)
+				/* Check all outbound connections from the current room. */
+				for(i = 0; i < rooms[currentLocation].numOutboundConnections; i++)
 				{
-					validInput = true;
+
+					if(strcmp(userInput, rooms[currentLocation].roomConnections[i]) == 0)
+					{
+						validInput = true;
+					}
+
+				}
+
+				if(validInput == false)
+				{
+					printf("\n\nHUH? I DON'T UNDERSTAND THAT ROOM. TRY AGAIN.\n\n\n");
+
+					/* Set up menu for another move. */
+					printf("CURRENT LOCATION: %s\n", rooms[currentLocation].name);
+
+					/* Display possible connections. */
+					displayConnections(rooms, currentLocation);
+
 				}
 
 			}
 
-			if(validInput == false)
-			{
-				printf("\n\nHUH? I DON'T UNDERSTAND THAT ROOM. TRY AGAIN.\n\n\n");
-			}
-
-		}
-
-		/* Move current location to chosen room. */
-		for(i = 0; i < MAXROOMS; i++)
-		{
-
-			/* Find room that matches the users valid next room choice. */
-			if(strcmp(userInput, rooms[i].name) == 0)
+			/* Move current location to chosen room. */
+			for(i = 0; i < MAXROOMS; i++)
 			{
 
-				/* Enter the room */
-				currentLocation = i;
-
-				/* Incrememnt steps taken. */
-				stepCount++;
-
-				/* Update path history. */
-				strcat(pathHistory, userInput);
-				strcat(pathHistory, "\n");
-
-				/* Check if end room. */
-				if(strcmp("END_ROOM", rooms[currentLocation].type) == 0)
+				/* Find room that matches the users valid next room choice. */
+				if(strcmp(userInput, rooms[i].name) == 0)
 				{
-					printf("\n\nYOU HAVE FOUND THE END ROOM. CONGRATULATIONS!\n");
-					printf("YOU TOOK %d STEPS. YOUR PATH TO VICTORY WAS:\n%s", stepCount, pathHistory);
 
-					return 0;
+					/* Enter the room */
+					currentLocation = i;
+
+					/* Incrememnt steps taken. */
+					stepCount++;
+
+					/* Update path history. */
+					strcat(pathHistory, userInput);
+					strcat(pathHistory, "\n");
+
+					/* Check if end room. */
+					if(strcmp("END_ROOM", rooms[currentLocation].type) == 0)
+					{
+						printf("\n\nYOU HAVE FOUND THE END ROOM. CONGRATULATIONS!\n");
+						printf("YOU TOOK %d STEPS. YOUR PATH TO VICTORY WAS:\n%s", stepCount, pathHistory);
+
+						/* Unlock mutex before exiting. */
+						pthread_mutex_unlock(&myMutex);
+
+						return 0;
+
+					}
 
 				}
 
@@ -127,7 +171,7 @@ int main(void)
 		}
 
 		/* Set up menu for another move. */
-		printf("CURRENT LOCATION: %s\n", rooms[currentLocation].name);
+		printf("\n\nCURRENT LOCATION: %s\n", rooms[currentLocation].name);
 
 		/* Display possible connections. */
 		displayConnections(rooms, currentLocation);
@@ -406,8 +450,11 @@ static void displayConnections(struct Room* array, int currentLocation)
 }
 
 /* Writes current time to an output file. */
-static void writeTime()
+static void* writeTime()
 {
+	/* Lock mutex. */
+	pthread_mutex_lock(&myMutex);
+
 	FILE* fileStream;
 	char fileName[250] = "./currentTime.txt";
 	char buffer[250]; memset(buffer, '\0', sizeof(buffer));
@@ -425,6 +472,26 @@ static void writeTime()
 	/* Write time to file. */
 	fileStream = fopen(fileName, "w");
 	fprintf(fileStream, "%s", buffer);
+
+	fclose(fileStream);
+
+	/* Unlock mutex. */
+	pthread_mutex_unlock(&myMutex);
+
+	return;
+
+}
+
+/* Read and print time data from a file. */
+static void printTimeFile()
+{
+	FILE* fileStream;
+	char fileName[250] = "./currentTime.txt";
+	char buffer[250]; memset(buffer, '\0', sizeof(buffer));
+
+	fileStream = fopen(fileName, "r");
+	fgets(buffer, sizeof(buffer), fileStream);
+	printf("\n%s\n\n", buffer);
 
 	fclose(fileStream);
 
