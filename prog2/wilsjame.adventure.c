@@ -12,6 +12,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 #define MAXROOMS 7
 #define MAXCONNECTIONS 6
@@ -27,6 +28,7 @@ struct Room
 /* Useful functions =^D */
 static void getRoomDir(char* roomDirName);
 static void getRoomData(struct Room* array, char* roomDirName);
+static void getUserInput(char* userInput);
 
 //TODO
 // [DONE] read files into array of room structs
@@ -38,14 +40,26 @@ int main(void)
 {
 	int i; // General use iterator
 	int connectionItr;
+
 	struct Room rooms[MAXROOMS]; // Array of MAXROOMS (blank) Room structs
 	char roomDirName[250]; memset(roomDirName, '\0', sizeof(roomDirName)); 
+	char userInput[250]; memset(userInput, '\0', sizeof(userInput));
 
-	/* Get the room subdirector's name. */
+	/* Get the room subdirectory's name. */
 	getRoomDir(roomDirName);
 
 	/* Parse room files and store room data in rooms struct array. */
 	getRoomData(rooms, roomDirName);
+
+	/* Begin game loop. */
+
+	//TEST
+	getUserInput(userInput);
+	printf("User input was: %s\n", userInput);
+	getUserInput(userInput);
+	printf("User input was: %s\n", userInput);
+	getUserInput(userInput);
+	printf("User input was: %s\n", userInput);
 
 	//TEST
 	printf("rooms array data:\n");
@@ -249,6 +263,35 @@ static void getRoomData(struct Room* array, char* roomDirName)
 
 	/* Close directory stream. */
 	closedir(dirToCheck);
+
+	return;
+
+}
+
+/* Gets and stores user input in a variable accessible in main. Does not validate. */
+static void getUserInput(char* userInput)
+{
+
+	/* Clear any previous user inputs. */
+	memset(userInput, '\0', sizeof(userInput));
+
+	/* Magic settings
+	 * size_t is unsigned integer type to hold result of sizeof(). */
+	size_t bufferSize = 0; // Holds how large the allocated buffer is.
+	char* lineEntered = NULL; // Points to a buffer allocated by getline() that holds entered string + \n + \0.
+
+	/* Get input from user */
+	printf("WHERE TO? >");
+
+	/* Magic settings here, getline() buffers automatically use malloc. :^) */
+	getline(&lineEntered, &bufferSize, stdin); // Get a line from the user.
+	printf("Raw entered line: %s\n", lineEntered);
+
+	/* Store user input for use in main(). */
+	strcpy(userInput, lineEntered);
+
+	/* Free memory allocated by getline(), Free Lil B. */
+	free(lineEntered);
 
 	return;
 
