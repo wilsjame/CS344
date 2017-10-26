@@ -29,6 +29,8 @@ struct Room
 static void getRoomDir(char* roomDirName);
 static void getRoomData(struct Room* array, char* roomDirName);
 static void getUserInput(char* userInput);
+static int getStartRoomIndex(struct Room* array);
+static void displayConnections(struct Room* array, int currentLocation);
 
 //TODO
 // [DONE] read files into array of room structs
@@ -39,28 +41,29 @@ static void getUserInput(char* userInput);
 int main(void)
 {
 	int i; // General use iterator
+	int currentLocation;
 	int connectionItr;
 
 	struct Room rooms[MAXROOMS]; // Array of MAXROOMS (blank) Room structs
 	char roomDirName[250]; memset(roomDirName, '\0', sizeof(roomDirName)); 
 	char userInput[250]; memset(userInput, '\0', sizeof(userInput));
-
+	
 	/* Get the room subdirectory's name. */
 	getRoomDir(roomDirName);
 
 	/* Parse room files and store room data in rooms struct array. */
 	getRoomData(rooms, roomDirName);
 
+	/* Display starting location. */
+	currentLocation = getStartRoomIndex(rooms);
+	printf("CURRENT LOCATION: %s\n", rooms[currentLocation].name);
+
+	/* Display possible connections. */
+	displayConnections(rooms, currentLocation);
+
+
+
 	/* Begin game loop. */
-
-	//TEST
-	getUserInput(userInput);
-	printf("User input was: %s\n", userInput);
-	getUserInput(userInput);
-	printf("User input was: %s\n", userInput);
-	getUserInput(userInput);
-	printf("User input was: %s\n", userInput);
-
 	//TEST
 	printf("rooms array data:\n");
 	for(i = 0; i < MAXROOMS; i++)
@@ -285,7 +288,6 @@ static void getUserInput(char* userInput)
 
 	/* Magic settings here, getline() buffers automatically use malloc. :^) */
 	getline(&lineEntered, &bufferSize, stdin); // Get a line from the user.
-	printf("Raw entered line: %s\n", lineEntered);
 
 	/* Store user input for use in main(). */
 	strcpy(userInput, lineEntered);
@@ -293,6 +295,58 @@ static void getUserInput(char* userInput)
 	/* Free memory allocated by getline(), Free Lil B. */
 	free(lineEntered);
 
+	return;
+
+}
+
+/* Finds the starting room and returns its index in the room array. */
+static int getStartRoomIndex(struct Room* array)
+{
+	int i;
+
+	for(i = 0; i < MAXROOMS; i++)
+	{
+
+		if(strcmp("START_ROOM", array[i].type) == 0)
+		{
+
+			return i;
+
+		}
+
+	}
+
+}
+
+/* Displays the room connections given the current location index. */
+static void displayConnections(struct Room* array, int currentLocation)
+{
+	int i;
+	int numberOfConnections = array[currentLocation].numOutboundConnections;
+	char possibleConnections[250]; memset(possibleConnections, '\0', sizeof(possibleConnections));;
+
+	for(i = 0; i < numberOfConnections; i++)
+	{
+
+		if(i < numberOfConnections - 1)
+		{
+
+			/* Append connections seperated by commas. */
+			strcat(possibleConnections, array[currentLocation].roomConnections[i]);
+			strcat(possibleConnections, ", ");
+		}
+		else
+		{
+
+			/* Append last connection and end with a period ".". */
+			strcat(possibleConnections, array[currentLocation].roomConnections[i]);
+			strcat(possibleConnections, ".");
+		}
+
+	}
+
+	printf("POSSIBLE CONNECTIONS: %s\n", possibleConnections);
+	
 	return;
 
 }
