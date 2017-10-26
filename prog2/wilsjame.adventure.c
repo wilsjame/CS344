@@ -13,6 +13,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 #define MAXROOMS 7
 #define MAXCONNECTIONS 6
@@ -33,20 +34,21 @@ static int getStartRoomIndex(struct Room* array);
 static void displayConnections(struct Room* array, int currentLocation);
 
 //TODO
-// [DONE] read files into array of room structs
-//design game loop structure
-//design menu input functionality
 //add time feature using threads
+//check output is correct format
+//modularize game loop
 
 int main(void)
 {
 	int i; // General use iterator
 	int currentLocation;
-	int connectionItr;
+	bool validInput;
+	int stepCount = 0;
 
 	struct Room rooms[MAXROOMS]; // Array of MAXROOMS (blank) Room structs
 	char roomDirName[250]; memset(roomDirName, '\0', sizeof(roomDirName)); 
 	char userInput[250]; memset(userInput, '\0', sizeof(userInput));
+	char pathHistory[250]; memset(pathHistory, '\0', sizeof(pathHistory));
 	
 	/* Get the room subdirectory's name. */
 	getRoomDir(roomDirName);
@@ -57,29 +59,77 @@ int main(void)
 	/* Display starting location. */
 	currentLocation = getStartRoomIndex(rooms);
 	printf("CURRENT LOCATION: %s\n", rooms[currentLocation].name);
-
-	/* Display possible connections. */
 	displayConnections(rooms, currentLocation);
 
-
-
-	/* Begin game loop. */
-	//TEST
-	printf("rooms array data:\n");
-	for(i = 0; i < MAXROOMS; i++)
+	/* Begin game loop. */ 
+	while(1)
 	{
-		printf("Room Name: %s\n", rooms[i].name);
 
-		for(connectionItr = 0; connectionItr < rooms[i].numOutboundConnections; connectionItr++)
+		/* Reset before each iteration. */
+		validInput = false;
+
+		/* Have user input a valid connection. */
+		while(validInput == false)
 		{
-			printf("CONNECTION: %s\n", rooms[i].roomConnections[connectionItr]);
+			getUserInput(userInput);
+
+			/* Check all outbound connections from the current room. */
+			for(i = 0; i < rooms[currentLocation].numOutboundConnections; i++)
+			{
+
+				if(strcmp(userInput, rooms[currentLocation].roomConnections[i]) == 0)
+				{
+					validInput = true;
+				}
+
+			}
+
+			if(validInput == false)
+			{
+				printf("\n\nHUH? I DON'T UNDERSTAND THAT ROOM. TRY AGAIN.\n\n\n");
+			}
+
 		}
 
-		printf("Room Type: %s\n", rooms[i].type);
+		/* Move current location to chosen room. */
+		for(i = 0; i < MAXROOMS; i++)
+		{
+
+			/* Find room that matches the users valid next room choice. */
+			if(strcmp(userInput, rooms[i].name) == 0)
+			{
+
+				/* Enter the room */
+				currentLocation = i;
+
+				/* Incrememnt steps taken. */
+				stepCount++;
+
+				/* Update path history. */
+				strcat(pathHistory, userInput);
+				strcat(pathHistory, "\n");
+
+				/* Check if end room. */
+				if(strcmp("END_ROOM", rooms[currentLocation].type) == 0)
+				{
+					printf("\n\nYOU HAVE FOUND THE END ROOM. CONGRATULATIONS!\n");
+					printf("YOU TOOK %d STEPS. YOUR PATH TO VICTORY WAS:\n%s", stepCount, pathHistory);
+
+					return 0;
+
+				}
+
+			}
+
+		}
+
+		/* Set up menu for another move. */
+		printf("CURRENT LOCATION: %s\n", rooms[currentLocation].name);
+
+		/* Display possible connections. */
+		displayConnections(rooms, currentLocation);
 	}
 
-	return 0;
-	
 }
 
 /* Assigns the name of the most recent rooms subdirectory to the input string. */
@@ -141,8 +191,6 @@ static void getRoomDir(char* newestDirName)
 
 	/* Close directory stream. */
 	closedir(dirToCheck);
-
-	printf("Newest rooms directory found is: %s\n", newestDirName);
 
 	return;
 	
@@ -288,6 +336,9 @@ static void getUserInput(char* userInput)
 
 	/* Magic settings here, getline() buffers automatically use malloc. :^) */
 	getline(&lineEntered, &bufferSize, stdin); // Get a line from the user.
+
+	/* Remove trailing '\n' from pressing enter. */
+	lineEntered[strcspn(lineEntered, "\n")] = 0;
 
 	/* Store user input for use in main(). */
 	strcpy(userInput, lineEntered);
