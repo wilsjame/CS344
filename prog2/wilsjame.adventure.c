@@ -14,6 +14,8 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <pthread.h>
+#include <time.h>
 
 #define MAXROOMS 7
 #define MAXCONNECTIONS 6
@@ -32,6 +34,7 @@ static void getRoomData(struct Room* array, char* roomDirName);
 static void getUserInput(char* userInput);
 static int getStartRoomIndex(struct Room* array);
 static void displayConnections(struct Room* array, int currentLocation);
+static void writeTime();
 
 //TODO
 //add time feature using threads
@@ -402,3 +405,29 @@ static void displayConnections(struct Room* array, int currentLocation)
 
 }
 
+/* Writes current time to an output file. */
+static void writeTime()
+{
+	FILE* fileStream;
+	char fileName[250] = "./currentTime.txt";
+	char buffer[250]; memset(buffer, '\0', sizeof(buffer));
+
+	/* Get time in formatted string. */
+	time_t rawtime;
+	struct tm *info;
+
+	time(&rawtime);
+
+	info = localtime(&rawtime);
+
+	strftime(buffer, 250, "%I:%M%p, %A %d, %Y", info);
+
+	/* Write time to file. */
+	fileStream = fopen(fileName, "w");
+	fprintf(fileStream, "%s", buffer);
+
+	fclose(fileStream);
+
+	return;
+
+}
