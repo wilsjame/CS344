@@ -22,7 +22,7 @@ void main()
 			printf("CHILD: Terminating!\n");
 			break;
 		/* We in the parent, still. */
-		defualt:
+		default:
 			printf("PARENT: making child a zombie for ten seconds;\n");
 			printf("PARENT: Type \"ps -elf | grep \'username\'\" to see the defunct child\n");
 			printf("PARENT: Sleeping...\n");
