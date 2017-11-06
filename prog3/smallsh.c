@@ -32,7 +32,7 @@ int main()
 		do
 		{
 			commandPrompt(userInput);
-		}while(1);//isCommand(userInput) is false
+		}while(isCommand(userInput) == false);
 
 		return; //for testing
 
@@ -119,5 +119,26 @@ void commandPrompt(char* userInput)
 
 };
 
-//bool isCommand(char* userInput)
+/* Returns false if userInput is blank or a comment, true otherwise. */
+bool isCommand(char* userInput)
+{
+	bool isCommand = false;
+
+	if(strlen(userInput) == 0)
+	{
+		printf("blank line entered!\n");
+	}
+	else if(strncmp(userInput, "#", 1) == 0)
+	{
+		printf("comment entered!\n");
+	}
+	else
+	{
+		printf("command entered!\n");
+		isCommand = true;
+	}
+
+	return isCommand;
+
+}
 
