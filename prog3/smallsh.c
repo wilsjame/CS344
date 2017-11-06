@@ -6,6 +6,8 @@
 *********************************************************************/
 #include <stdio.h>
 #include <stdbool.h>
+#include <string.h>
+#include <stdlib.h>
 
 /* Function prototypes. */
 void commandPrompt(char* userInput);
@@ -17,17 +19,22 @@ void status();
 
 int main()
 {
-	printf("Greetings from smallsh!\n");
-	//declare user input string
 
-	/* Clean Outline */
+	/* Global-like user input string. */
+	char userInput[2048];
+
+	/* Main loop prompts and gets input from user. */
 	while(1)
 	{
-		//memset user input string
+
+		
+		/* Get a command from the user. */
 		do
 		{
-		//call commandPrompt(user input string)
-		}while(//isCommand(userInput) is false)
+			commandPrompt(userInput);
+		}while(1);//isCommand(userInput) is false
+
+		return; //for testing
 
 		//switch(direcCommandt(userInput)
 		//	Built In
@@ -80,4 +87,37 @@ int main()
 	return 0;
 
 }
+
+/* Displays command line prompt and gets user input. No error checking. */
+void commandPrompt(char* userInput)
+{
+
+	/* First things first, clear user input string. */
+	memset(userInput, '\0', sizeof(userInput));
+
+	/* Magic settings. */
+	size_t bufferSize = 0;
+	char* lineEntered = NULL;
+	
+	/* Display prompt and then flush all open output steams. */
+	printf(": ");
+	fflush(NULL);
+
+	/* By magic settings, getline() buffers automatically use malloc. */
+	getline(&lineEntered, &bufferSize, stdin);
+
+	/* Remove trailing '\n' from pressing enter. */
+	lineEntered[strcspn(lineEntered, "\n")] = 0;
+
+	/* Store user input for use in main(). */
+	strcpy(userInput, lineEntered);
+
+	/* Free memory allocated by getline() aka free Lil B. */
+	free(lineEntered);
+
+	return;
+
+};
+
+//bool isCommand(char* userInput)
 
