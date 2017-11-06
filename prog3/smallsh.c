@@ -12,7 +12,7 @@
 /* Function prototypes. */
 void commandPrompt(char* userInput);
 bool isCommand(char* userInput);
-int  directCommand(char* userInput);
+int  determineCommand(char* userInput);
 void exit();
 void cd();
 void status();
@@ -33,9 +33,9 @@ int main()
 			commandPrompt(userInput);
 		}while(isCommand(userInput) == false);
 
-		return; //for testing
+		determineCommand(userInput);
 
-		//switch(direcCommandt(userInput)
+		//switch(determineCommand(userInput)
 		//	Built In
 		//case 0: exit()
 		//case 1: cd(); break;
@@ -45,28 +45,6 @@ int main()
 		//
 	}
 
-	/* Rough Outline */
-	//main loop will get user input "The Prompt"
-	//
-	//prompt user in the correct format
-	//get an input from the user
-	//store the input in a variable
-	//
-	// In detail..
-	// loop continously.. while(1)
-	//
-	// loop until a command is entered
-	// do 
-	// create command line prompt
-	// 	use a colon :
-	// 	flush output buffers after every print using fflush()
-	// 	assume command is words made up of spaces
-	// Get input from user
-	// while is command is false
-	// 	Check if,
-	// 	blank line -> FALSE do nothing and reprompt
-	// 	comment -> FALSE do nothing and reprompt
-	//
 	// Now we have a command
 	//  switch on builtInCommads
 	//  built in commands: exit, cd, (status is built-in but don't worry bout it yet)
@@ -133,6 +111,30 @@ bool isCommand(char* userInput)
 	}
 
 	return isCommand;
+
+}
+
+//switch(directCommand(userInput)
+		//	Built In
+		//case 0: exit()
+		//case 1: cd(); break;
+		//case 2: status(); break;
+		//	Non Built In
+		//default: ...; break;
+		//
+
+/* Built-in commands return 0, 1, or 2 otherwise return 3. */
+int  determineCommand(char* userInput)
+{
+	/* Temporary variable to hold first word in user input's command. */
+	char* command[250]; memset(command, '\0', sizeof(command));
+
+	/* Store the first word in command. */
+	sscanf(userInput, "%s", command);
+
+	printf("The first word of the command line is: %s\n", command);
+
+	return 3;
 
 }
 
