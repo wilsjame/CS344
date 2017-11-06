@@ -26,7 +26,6 @@ int main()
 	/* Main loop prompts and gets input from user. */
 	while(1)
 	{
-
 		
 		/* Get a command from the user. */
 		do
@@ -122,19 +121,14 @@ void commandPrompt(char* userInput)
 /* Returns false if userInput is blank or a comment, true otherwise. */
 bool isCommand(char* userInput)
 {
-	bool isCommand = false;
+	bool isCommand;
 
-	if(strlen(userInput) == 0)
+	if(strlen(userInput) == 0 || strncmp(userInput, "#", 1) == 0)
 	{
-		printf("blank line entered!\n");
-	}
-	else if(strncmp(userInput, "#", 1) == 0)
-	{
-		printf("comment entered!\n");
+		isCommand = false;
 	}
 	else
 	{
-		printf("command entered!\n");
 		isCommand = true;
 	}
 
