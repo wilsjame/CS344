@@ -14,7 +14,7 @@ void commandPrompt(char* userInput);
 bool isCommand(char* userInput);
 int  determineCommand(char* userInput);
 void builtInExit(void);
-void builtInCd(void);
+void builtInCd(char* userInput);
 void builtInStatus(void);
 
 int main()
@@ -40,7 +40,7 @@ int main()
 				builtInExit();
 				break;
 			case 1:
-				printf("call cd\n");
+				builtInCd(userInput);
 				break;
 			case 2:
 				printf("call status\n");
@@ -150,5 +150,19 @@ void builtInExit()
 	
 	exit(EXIT_SUCCESS);
 
+}
+
+/* Changes directories. By itself, change to the directory specified in 
+ * the HOME enviornment variable. Can also take one argument, either the
+ * absolute or relative path of the directory to change to. */
+void builtInCd(char* userInput)
+{
+	//determine if cd has an argument
+	//no argument change directory to HOME enviornment variable
+	//	get the HOME enviornment variable
+	//	change directory to HOME
+	//has argument change directory to specified path
+	//	store the directory path in a string
+	//	pass the path string to chdir
 }
 
