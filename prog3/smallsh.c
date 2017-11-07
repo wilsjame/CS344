@@ -126,15 +126,37 @@ bool isCommand(char* userInput)
 /* Built-in commands return 0, 1, or 2 otherwise return 3. */
 int  determineCommand(char* userInput)
 {
-	/* Temporary variable to hold first word in user input's command. */
-	char* command[250]; memset(command, '\0', sizeof(command));
 
-	/* Store the first word in command. */
+	/* Temporary variable to hold first word in user input's command. */
+	char command[250]; memset(command, '\0', sizeof(command));
+
+	/* Store the first word as command. */
 	sscanf(userInput, "%s", command);
 
-	printf("The first word of the command line is: %s\n", command);
+	if(strcmp(command, "exit") == 0)
+	{
 
-	return 3;
+		return 0;
+
+	}
+	else if(strcmp(command, "cd") == 0)
+	{
+
+		return 1;
+
+	}
+	else if(strcmp(command, "status") == 0)
+	{
+
+		return 2;
+
+	}
+	else
+	{
+
+		return 3;
+
+	}
 
 }
 
