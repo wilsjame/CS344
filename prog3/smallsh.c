@@ -13,9 +13,9 @@
 void commandPrompt(char* userInput);
 bool isCommand(char* userInput);
 int  determineCommand(char* userInput);
-void exit();
-void cd();
-void status();
+void builtInExit(void);
+void builtInCd(void);
+void builtInStatus(void);
 
 int main()
 {
@@ -37,7 +37,7 @@ int main()
 		switch(determineCommand(userInput))
 		{
 			case 0: 
-				printf("call exit\n");
+				builtInExit();
 				break;
 			case 1:
 				printf("call cd\n");
@@ -139,6 +139,16 @@ int  determineCommand(char* userInput)
 		return 3;
 
 	}
+
+}
+
+/* Kill other processes or jobs started by the shell then terminate itself. */
+void builtInExit()
+{
+	//kill any processes or jobs that the shell has started 
+	//consider using an array of PID's 
+	
+	exit(EXIT_SUCCESS);
 
 }
 
