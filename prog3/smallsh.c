@@ -33,33 +33,24 @@ int main()
 			commandPrompt(userInput);
 		}while(isCommand(userInput) == false);
 
-		determineCommand(userInput);
+		/* Switch on built in commands and default to non built. */
+		switch(determineCommand(userInput))
+		{
+			case 0: 
+				printf("call exit\n");
+				break;
+			case 1:
+				printf("call cd\n");
+				break;
+			case 2:
+				printf("call status\n");
+				break;
+			default:
+				printf("non built in command\n");
+				break;
+		}
 
-		//switch(determineCommand(userInput)
-		//	Built In
-		//case 0: exit()
-		//case 1: cd(); break;
-		//case 2: status(); break;
-		//	Non Built In
-		//default: ...; break;
-		//
 	}
-
-	// Now we have a command
-	//  switch on builtInCommads
-	//  built in commands: exit, cd, (status is built-in but don't worry bout it yet)
-	// 
-	//  0 exit
-	//  1 cd
-	//  	get back to beginning of loop
-	//  2 status
-	//  	get back to beginning of loop
-	//  3 default do nothing and carry on
-	// 
-	// Now we have a non built-in command...
-	// do stuff...
-	// get back to beginnin of loop
-	//  
 
 	return 0;
 
@@ -113,15 +104,6 @@ bool isCommand(char* userInput)
 	return isCommand;
 
 }
-
-//switch(directCommand(userInput)
-		//	Built In
-		//case 0: exit()
-		//case 1: cd(); break;
-		//case 2: status(); break;
-		//	Non Built In
-		//default: ...; break;
-		//
 
 /* Built-in commands return 0, 1, or 2 otherwise return 3. */
 int  determineCommand(char* userInput)
