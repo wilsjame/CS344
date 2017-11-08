@@ -8,6 +8,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 /* Function prototypes. */
 void commandPrompt(char* userInput);
@@ -26,6 +27,8 @@ int main()
 	/* Main loop prompts and gets input from user. */
 	while(1)
 	{
+
+		printf("current dir is: %s\n", get_current_dir_name()); //TRACE
 		
 		/* Get a command from the user. */
 		do
@@ -157,12 +160,35 @@ void builtInExit()
  * absolute or relative path of the directory to change to. */
 void builtInCd(char* userInput)
 {
-	//determine if cd has an argument
-	//no argument change directory to HOME enviornment variable
-	//	get the HOME enviornment variable
-	//	change directory to HOME
-	//has argument change directory to specified path
-	//	store the directory path in a string
-	//	pass the path string to chdir
+	
+	if(strcmp(userInput, "cd") == 0)
+	{
+
+		if(chdir(getenv("HOME")) != 0)
+		{
+			printf("chdir(HOME) failure!\n");
+		}
+
+	}
+	else
+	{
+
+		/* Temporary variable to hold directory path. */
+		char path[250]; memset(path, '\0', sizeof(path));
+
+		/* Store the specified path. */
+		sscanf(userInput, "%*s %s", path);
+
+		printf("cd to path given: %s\n", path); //TRACE
+
+		if(chdir(path) != 0)
+		{
+			printf("chdir(path) failure!\n");
+		}
+
+	}
+
+	return;
+
 }
 
