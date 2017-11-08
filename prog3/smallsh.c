@@ -20,16 +20,21 @@ void builtInStatus(void);
 
 int main()
 {
-
-	/* Global-like user input string. */
 	char userInput[2048];
+	bool isBuiltIn;
+	pid_t spawnPid = -5; //initialize to dummy value to trace any bugs
+
+	/* Children PID tracking array. Consider making dynamic. */
+	int pidIdx= 0;
+	pid_t trackingArray[250]; 
 
 	/* Main loop prompts and gets input from user. */
 	while(1)
 	{
 
-		printf("current dir is: %s\n", get_current_dir_name()); //TRACE
-		
+		/* Reset flag before every loop iteration. */
+		isBuiltIn = true;
+
 		/* Get a command from the user. */
 		do
 		{
@@ -49,11 +54,31 @@ int main()
 				printf("call status\n");
 				break;
 			default:
-				printf("non built in command\n");
+				isBuiltIn = false;
 				break;
 		}
 
-	}
+		if(isBuiltIn != true)
+		{
+			spawnPid = fork();
+
+			switch(spawnPid)
+			{
+				case -1:
+					perror("fork() failure!\n");
+					exit(1);
+					break;
+				case 0:
+					printf("I am the child!\n");
+					break;
+				default:
+					printf("I am the parent!\n");
+					break;
+			}
+
+		}
+
+	} //end of while(1)
 
 	return 0;
 
@@ -178,8 +203,6 @@ void builtInCd(char* userInput)
 
 		/* Store the specified path. */
 		sscanf(userInput, "%*s %s", path);
-
-		printf("cd to path given: %s\n", path); //TRACE
 
 		if(chdir(path) != 0)
 		{
