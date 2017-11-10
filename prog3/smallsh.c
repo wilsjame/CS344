@@ -10,11 +10,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-struct nonBuiltInCommand 
-{
-	char commandName[250];
-	char* argVector[512];
-};
 
 /* Function prototypes. */
 void commandPrompt(char* userInput);
@@ -23,15 +18,12 @@ int  determineCommand(char* userInput);
 void builtInExit(void);
 void builtInCd(char* userInput);
 void builtInStatus(void);
-//void formatCommand(char* userInput, char* command, char* argVector[]);
-void formatCommand(char* userInput, struct nonBuiltInCommand* command);
+void formatCommand(char* userInput, char* args[]);
 
 int main()
 {
 	char userInput[2048];
-	struct nonBuiltInCommand command;
-	//char command[250];
-	//char* argVector[512]; memset(argVector, '\0', sizeof(argVector));
+	char* args[512];
 	bool isBuiltIn;
 	pid_t spawnPid = -5; //initialize to dummy value to trace any bugs
 	
@@ -78,8 +70,9 @@ int main()
 		if(isBuiltIn != true)
 		{
 			//formatCommand(userInput, command, argVector);
-			formatCommand(userInput, &command);
+			formatCommand(userInput, &args);
 
+			/*
 			spawnPid = fork(); 
 
 			switch(spawnPid)
@@ -98,6 +91,7 @@ int main()
 					printf("I am the parent!\n");
 					break;
 			}
+			*/
 
 		}
 
@@ -238,30 +232,30 @@ void builtInCd(char* userInput)
 
 }
 
-//
-//void formatCommand(char* userInput, char* command, char* argVector[])
-void formatCommand(char* userInput, struct nonBuiltInCommand* command)
+/* Parses user input and stores the command name and arguments. */
+void formatCommand(char* userInput, char* args[])
 {
 	int argItr = 0;
 
 	memset(command->commandName, '\0', sizeof(command->commandName));
 	memset(command->argVector, '\0', sizeof(command->argVector));
-	//memset(command, '\0', sizeof(command));
-	//memset(argVector, '\0', sizeof(argVector));
 
-	//set first token to command
-	command->argVector[argItr] = strtok(userInput, " ");
-	printf("The first argument on the command line is: %s\n", command->argVector[argItr]);
-	printf("trace\n");
+	/* First token is the command name. */
+	strcpy(command->commandName, strtok(userInput, " "));
 	
-	//add remaining tokens (if any) to argVector
+	/* Remaining tokens (if any) are additional arguments. */
+	do
+	{
+		command->argVector[argItr] = strtok(NULL, " ");
+	}while(command->argVector[argItr++] != NULL);
+/*
 	while(command->argVector[argItr] != NULL)
 	{
-		printf("trace argItr is %d\n", argItr);
-		argItr++;
-		command->argVector[argItr] = strtok(NULL, " ");
+		command->argVector[++argItr] = strtok(NULL, " ");
 	}
-
+*/
+	printf("commandName is: %s\n", command->commandName);
+	printf("argItr is: %d\n", argItr);
 	int i;
 	for(i = 0; i < argItr; i++)
 	{
