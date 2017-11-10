@@ -25,7 +25,10 @@ int main()
 	char userInput[2048];
 	bool isBuiltIn;
 	char* args[512]; 
-	pid_t spawnPid = -5; //initialize to dummy value to trace any bugs
+
+	/* Initialized to dummy values to trace potential bugs. */
+	pid_t spawnPid = -5; 
+	int childExitMethod = -5;
 
 	/* Children PID tracking array. Consider making dynamic. */
 	int pidIdx= 0;
@@ -66,8 +69,9 @@ int main()
 
 			/* Store command and any arguments in args array. */
 			formatCommand(userInput, args);
-
-			spawnPid = fork();
+			
+			/* Create a child. */
+			spawnPid = fork(); 
 
 			switch(spawnPid)
 			{
@@ -76,16 +80,39 @@ int main()
 					exit(1);
 					break;
 				case 0:
-					printf("I am the child!\n");
-					break;
-				default:
-					printf("I am the parent!\n");
+					//in child
+					//printf("I am the child!\n");
+					execute(args);
 					break;
 			}
 
+			//in parent TESTING
+			//printf("Waiting for child %d to finish. Parent is blocked\n", spawnPid);
+			pid_t childPid = waitpid(spawnPid, &childExitMethod, 0); //0 -> Block
+			if(childPid == -1)
+			{
+				perror("Wait failed!");
+				exit(1);
+			}
+
+			if(WIFEXITED(childExitMethod))
+			{
+				//printf("Child terminated normally\n");
+				int exitStatus = WEXITSTATUS(childExitMethod);
+				//printf("exit status was: %d\n", exitStatus);
+			}
+			else
+			{
+				printf("By deduction.. child terminated by signal\n");
+			}
+
+			//printf("Done waiting for child to finish\n");
+			//END TESTING
+
+
 		}
 
-	} //end of while(1)
+	} // End of while(1).
 
 	return 0;
 
@@ -180,6 +207,7 @@ int  determineCommand(char* userInput)
 /* Kill other processes or jobs started by the shell then terminate itself. */
 void builtInExit()
 {
+	//TODO
 	//kill any processes or jobs that the shell has started 
 	//consider using an array of PID's 
 	
@@ -241,19 +269,20 @@ void formatCommand(char* userInput, char* args[])
 	/* Set the last argument as NULL for exec(). */
 	args[++argItr] = NULL;
 
-	//TEST
+	/*TEST
 	printf("argItr is: %d\n", argItr);
 	int i;
 	for(i = 0; i < argItr; i++)
 	{
 		printf("args[%d]: %s\n", i, args[i]);
 	}
+	END TEST*/
 
 	return;
 
 }
 
-/* Call execvp(). */
+/* Lil' function to encapsulate execvp(). */
 void execute(char* args[])
 {
 
