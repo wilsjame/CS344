@@ -10,7 +10,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-
 /* Function prototypes. */
 void commandPrompt(char* userInput);
 bool isCommand(char* userInput);
@@ -18,19 +17,13 @@ int  determineCommand(char* userInput);
 void builtInExit(void);
 void builtInCd(char* userInput);
 void builtInStatus(void);
-<<<<<<< HEAD
 void formatCommand(char* userInput, char* args[]);
-=======
->>>>>>> parent of 6bda467... outline format non built in command function
 
 int main()
 {
 	char userInput[2048];
-<<<<<<< HEAD
-	char* args[512];
-=======
->>>>>>> parent of 6bda467... outline format non built in command function
 	bool isBuiltIn;
+	char* args[512]; 
 	pid_t spawnPid = -5; //initialize to dummy value to trace any bugs
 
 	/* Children PID tracking array. Consider making dynamic. */
@@ -69,15 +62,13 @@ int main()
 
 		if(isBuiltIn != true)
 		{
-<<<<<<< HEAD
-			//formatCommand(userInput, command, argVector);
-			formatCommand(userInput, &args);
+
+			/* Store command and any arguments in args array. */
+			formatCommand(userInput, args);
 
 			/*
 			spawnPid = fork(); 
-=======
 			spawnPid = fork();
->>>>>>> parent of 6bda467... outline format non built in command function
 
 			switch(spawnPid)
 			{
@@ -233,40 +224,34 @@ void builtInCd(char* userInput)
 
 }
 
-<<<<<<< HEAD
-/* Parses user input and stores the command name and arguments. */
+/* Stores command name and arguments in an array. */
 void formatCommand(char* userInput, char* args[])
 {
 	int argItr = 0;
-
-	memset(command->commandName, '\0', sizeof(command->commandName));
-	memset(command->argVector, '\0', sizeof(command->argVector));
+	memset(args, '\0', sizeof(args));
 
 	/* First token is the command name. */
-	strcpy(command->commandName, strtok(userInput, " "));
+	args[argItr] = strtok(userInput, " ");
 	
 	/* Remaining tokens (if any) are additional arguments. */
-	do
+	while(args[argItr] != NULL)
 	{
-		command->argVector[argItr] = strtok(NULL, " ");
-	}while(command->argVector[argItr++] != NULL);
-/*
-	while(command->argVector[argItr] != NULL)
-	{
-		command->argVector[++argItr] = strtok(NULL, " ");
+		argItr++;
+		args[argItr] = strtok(NULL, " ");
 	}
-*/
-	printf("commandName is: %s\n", command->commandName);
+
+	/* Set the last argument as NULL for exec(). */
+	args[++argItr] = NULL;
+
+	//TEST
 	printf("argItr is: %d\n", argItr);
 	int i;
 	for(i = 0; i < argItr; i++)
 	{
-		printf("command->argVector[%d]: %s\n", i, command->argVector[i]);
+		printf("args[%d]: %s\n", i, args[i]);
 	}
 
 	return;
 
 }
 
-=======
->>>>>>> parent of 6bda467... outline format non built in command function
