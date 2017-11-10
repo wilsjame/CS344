@@ -18,6 +18,7 @@ void builtInExit(void);
 void builtInCd(char* userInput);
 void builtInStatus(void);
 void formatCommand(char* userInput, char* args[]);
+void execute(char* args[]);
 
 int main()
 {
@@ -66,8 +67,6 @@ int main()
 			/* Store command and any arguments in args array. */
 			formatCommand(userInput, args);
 
-			/*
-			spawnPid = fork(); 
 			spawnPid = fork();
 
 			switch(spawnPid)
@@ -83,7 +82,6 @@ int main()
 					printf("I am the parent!\n");
 					break;
 			}
-			*/
 
 		}
 
@@ -252,6 +250,19 @@ void formatCommand(char* userInput, char* args[])
 	}
 
 	return;
+
+}
+
+/* Call execvp(). */
+void execute(char* args[])
+{
+
+	/* *args == args[0]. */
+	if(execvp(*args, args) < 0)
+	{
+		perror("Exec failure!");
+		exit(1);
+	}
 
 }
 
