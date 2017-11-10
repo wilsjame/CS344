@@ -70,6 +70,22 @@ int main()
 			/* Store command and any arguments in args array. */
 			formatCommand(userInput, args);
 			
+			//TODO Background and Foreground
+			//Check if background or foreground command
+			//foreground 
+			//	execute the command 
+			//	have shell (parent) wait:
+			//	block shell using waitpid until child finishes command
+			//background
+			//	execute command and print its process id
+			//	store process id in an array
+			//	shell returns command line control immediately after forking off the child
+			//	have shell periodically check for bg processes to complete
+			//		use waitpid(..NOHANG...)
+			//	cleanup completed bg processes as shell continues to run
+			//	check and print any completed bg pid and exit status just before new prompt
+			//	remove completed bg processes from array
+			
 			/* Create a child. */
 			spawnPid = fork(); 
 
@@ -81,7 +97,6 @@ int main()
 					break;
 				case 0:
 					//in child
-					//printf("I am the child!\n");
 					execute(args);
 					break;
 			}
