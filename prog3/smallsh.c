@@ -18,15 +18,20 @@ int  determineCommand(char* userInput);
 void builtInExit(void);
 void builtInCd(char* userInput);
 void builtInStatus(void);
+<<<<<<< HEAD
 void formatCommand(char* userInput, char* args[]);
+=======
+>>>>>>> parent of 6bda467... outline format non built in command function
 
 int main()
 {
 	char userInput[2048];
+<<<<<<< HEAD
 	char* args[512];
+=======
+>>>>>>> parent of 6bda467... outline format non built in command function
 	bool isBuiltIn;
 	pid_t spawnPid = -5; //initialize to dummy value to trace any bugs
-	
 
 	/* Children PID tracking array. Consider making dynamic. */
 	int pidIdx= 0;
@@ -62,31 +67,27 @@ int main()
 				break;
 		}
 
-		// Non built in command here!
-		// store command in its own string
-		// store additional arguments in string array
-		// In child call execvp 
-		// In parent wait on child to finish
 		if(isBuiltIn != true)
 		{
+<<<<<<< HEAD
 			//formatCommand(userInput, command, argVector);
 			formatCommand(userInput, &args);
 
 			/*
 			spawnPid = fork(); 
+=======
+			spawnPid = fork();
+>>>>>>> parent of 6bda467... outline format non built in command function
 
 			switch(spawnPid)
 			{
-				// Hull breach!
 				case -1:
 					perror("fork() failure!\n");
 					exit(1);
 					break;
-				// In the child
 				case 0:
 					printf("I am the child!\n");
 					break;
-				// In the parent
 				default:
 					printf("I am the parent!\n");
 					break;
@@ -232,6 +233,7 @@ void builtInCd(char* userInput)
 
 }
 
+<<<<<<< HEAD
 /* Parses user input and stores the command name and arguments. */
 void formatCommand(char* userInput, char* args[])
 {
@@ -266,3 +268,5 @@ void formatCommand(char* userInput, char* args[])
 
 }
 
+=======
+>>>>>>> parent of 6bda467... outline format non built in command function
