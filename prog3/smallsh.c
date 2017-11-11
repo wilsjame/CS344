@@ -17,20 +17,24 @@ int  determineCommand(char* userInput);
 void builtInExit(void);
 void builtInCd(char* userInput);
 void builtInStatus(void);
-void formatCommand(char* userInput, char* args[]);
+int formatCommand(char* userInput, char* args[]);
+bool isBackground(int numArguments, char* arg[]);
 void execute(char* args[]);
 
 int main()
 {
 	char userInput[2048];
-	bool isBuiltIn;
 	char* args[512]; 
 
+	bool isBuiltIn;
+	bool isForeground;
+	
 	/* Initialized to dummy values to trace potential bugs. */
 	pid_t spawnPid = -5; 
 	int childExitMethod = -5;
+	int numArguments;
 
-	/* Children PID tracking array. Consider making dynamic. */
+	/* Children PID tracking array. TODO Consider making dynamic and encapsulate in struct. */
 	int pidIdx= 0;
 	pid_t trackingArray[250]; 
 
@@ -68,7 +72,16 @@ int main()
 		{
 
 			/* Store command and any arguments in args array. */
-			formatCommand(userInput, args);
+			numArguments = formatCommand(userInput, args);
+
+			/* Is it a background or foreground process? */
+			if(isBackground(numArguments, args) == false)
+			{
+			}
+			else
+			{
+			}
+			
 			
 			//TODO Background and Foreground
 			//Check if background or foreground command
@@ -103,8 +116,8 @@ int main()
 
 			//in parent TESTING
 			//printf("Waiting for child %d to finish. Parent is blocked\n", spawnPid);
-			pid_t childPid = waitpid(spawnPid, &childExitMethod, 0); //0 -> Block
-			if(childPid == -1)
+			spawnPid = waitpid(spawnPid, &childExitMethod, 0); //0 -> Block
+			if(spawnPid == -1)
 			{
 				perror("Wait failed!");
 				exit(1);
@@ -265,8 +278,8 @@ void builtInCd(char* userInput)
 
 }
 
-/* Stores command name and arguments in an array. */
-void formatCommand(char* userInput, char* args[])
+/* Stores command name and arguments in an array and returns its size. */
+int formatCommand(char* userInput, char* args[])
 {
 	int argItr = 0;
 	memset(args, '\0', sizeof(args));
@@ -282,18 +295,38 @@ void formatCommand(char* userInput, char* args[])
 	}
 
 	/* Set the last argument as NULL for exec(). */
-	args[++argItr] = NULL;
+	args[argItr + 1] = NULL;
 
-	/*TEST
+	//TEST
 	printf("argItr is: %d\n", argItr);
 	int i;
 	for(i = 0; i < argItr; i++)
 	{
 		printf("args[%d]: %s\n", i, args[i]);
 	}
-	END TEST*/
+	//END TEST*/
 
-	return;
+	/* return the number of arguments in the array. */
+	return argItr;
+
+}
+
+/* Returns true if the command is to be run in the background. */ 
+bool isBackground(int numArguments, char* arg[])
+{
+	
+	if(strcmp(arg[numArguments - 1], "&") == 0) 
+	{
+
+		return true;
+		
+	}
+	else
+	{
+
+		return false;
+
+	}
 
 }
 
