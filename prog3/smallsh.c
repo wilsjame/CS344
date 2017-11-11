@@ -25,14 +25,10 @@ int main()
 {
 	char userInput[2048];
 	char* args[512]; 
-
 	bool isBuiltIn;
-	bool isForeground;
-	
-	/* Initialized to dummy values to trace potential bugs. */
-	pid_t spawnPid = -5; 
-	int childExitMethod = -5;
+	int childExitMethod;
 	int numArguments;
+	pid_t spawnPid;
 
 	/* Children PID tracking array. TODO Consider making dynamic and encapsulate in struct. */
 	int pidIdx= 0;
@@ -49,9 +45,9 @@ int main()
 		do
 		{
 			commandPrompt(userInput);
-		}while(isCommand(userInput) == false);
+		}while(!(isCommand(userInput)));
 
-		/* Switch on built in commands and default to non built. */
+		/* Switch on built in commands and default to non built in. */
 		switch(determineCommand(userInput))
 		{
 			case 0: 
@@ -68,27 +64,50 @@ int main()
 				break;
 		}
 
-		if(isBuiltIn != true)
+		if(!(isBuiltIn))
 		{
 
 			/* Store command and any arguments in args array. */
 			numArguments = formatCommand(userInput, args);
 
 			/* Is it a background or foreground process? */
-			if(isBackground(numArguments, args) == false)
+			if(isBackground(numArguments, args))
 			{
+
+				/* Background process:
+				 *
+				 */
+
+				printf("Its a background process!\n");
+
+				
 			}
 			else
 			{
+
+				/* Foreground process:
+				 * Execute command and have shell (parent) wait
+				 * in a blocked state until child terminates. */
+
+				printf("Its a foreground process!\n");
+				spawnPid = fork(); 
+
+				switch(spawnPid)
+				{
+					case -1:
+						perror("fork() failure!\n");
+						exit(1);
+						break;
+					case 0:
+						//in child
+						execute(args);
+						break;
+				}
+
+				waitpid(spawnPid, &childExitMethod, 0); //0 -> Block
 			}
 			
-			
-			//TODO Background and Foreground
-			//Check if background or foreground command
-			//foreground 
-			//	execute the command 
-			//	have shell (parent) wait:
-			//	block shell using waitpid until child finishes command
+			//TODO Background 
 			//background
 			//	execute command and print its process id
 			//	store process id in an array
@@ -99,25 +118,11 @@ int main()
 			//	check and print any completed bg pid and exit status just before new prompt
 			//	remove completed bg processes from array
 			
-			/* Create a child. */
-			spawnPid = fork(); 
-
-			switch(spawnPid)
-			{
-				case -1:
-					perror("fork() failure!\n");
-					exit(1);
-					break;
-				case 0:
-					//in child
-					execute(args);
-					break;
-			}
-
 			//in parent TESTING
 			//printf("Waiting for child %d to finish. Parent is blocked\n", spawnPid);
-			spawnPid = waitpid(spawnPid, &childExitMethod, 0); //0 -> Block
-			if(spawnPid == -1)
+			/*
+			pid_t childPid = waitpid(spawnPid, &childExitMethod, 0); //0 -> Block
+			if(childPid == -1)
 			{
 				perror("Wait failed!");
 				exit(1);
@@ -133,12 +138,13 @@ int main()
 			{
 				printf("By deduction.. child terminated by signal\n");
 			}
+			*/
 
 			//printf("Done waiting for child to finish\n");
 			//END TESTING
 
 
-		}
+		} // End of non built in command block.
 
 	} // End of while(1).
 
