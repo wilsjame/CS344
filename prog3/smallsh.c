@@ -38,14 +38,21 @@ int main()
 	while(1)
 	{
 
-		/* Reset flag before every loop iteration. */
-		isBuiltIn = true;
+		//Check here if any background processes have terminated
+		//	have shell periodically check for bg processes to complete
+			//		use waitpid(..NOHANG...)
+			//	cleanup completed bg processes as shell continues to run
+			//	check and print any completed bg pid and exit status just before new prompt
+			//	remove completed bg processes from array
 
 		/* Get a command from the user. */
 		do
 		{
 			commandPrompt(userInput);
 		}while(!(isCommand(userInput)));
+
+		/* Reset flag before every loop iteration. */
+		isBuiltIn = true;
 
 		/* Switch on built in commands and default to non built in. */
 		switch(determineCommand(userInput))
@@ -70,17 +77,20 @@ int main()
 			/* Store command and any arguments in args array. */
 			numArguments = formatCommand(userInput, args);
 
-			/* Is it a background or foreground process? */
+			/* Determine if background or foreground process. */
 			if(isBackground(numArguments, args))
 			{
 
+			//TODO Background 
+			//background
+			//	execute command and print its process id
+			//	store process id in an array
+			//	shell returns command line control immediately after forking off the child
+			
 				/* Background process:
 				 *
 				 */
 
-				printf("Its a background process!\n");
-
-				
 			}
 			else
 			{
@@ -89,7 +99,6 @@ int main()
 				 * Execute command and have shell (parent) wait
 				 * in a blocked state until child terminates. */
 
-				printf("Its a foreground process!\n");
 				spawnPid = fork(); 
 
 				switch(spawnPid)
@@ -104,23 +113,10 @@ int main()
 						break;
 				}
 
-				waitpid(spawnPid, &childExitMethod, 0); //0 -> Block
+				waitpid(spawnPid, &childExitMethod, 0); // 0 -> Block 
 			}
 			
-			//TODO Background 
-			//background
-			//	execute command and print its process id
-			//	store process id in an array
-			//	shell returns command line control immediately after forking off the child
-			//	have shell periodically check for bg processes to complete
-			//		use waitpid(..NOHANG...)
-			//	cleanup completed bg processes as shell continues to run
-			//	check and print any completed bg pid and exit status just before new prompt
-			//	remove completed bg processes from array
-			
-			//in parent TESTING
-			//printf("Waiting for child %d to finish. Parent is blocked\n", spawnPid);
-			/*
+			/* SIGNAL TESTING
 			pid_t childPid = waitpid(spawnPid, &childExitMethod, 0); //0 -> Block
 			if(childPid == -1)
 			{
@@ -139,10 +135,6 @@ int main()
 				printf("By deduction.. child terminated by signal\n");
 			}
 			*/
-
-			//printf("Done waiting for child to finish\n");
-			//END TESTING
-
 
 		} // End of non built in command block.
 
