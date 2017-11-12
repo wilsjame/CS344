@@ -82,15 +82,34 @@ int main()
 			{
 
 			//TODO Background 
-			//background
-			//	execute command and print its process id
-			//	store process id in an array
-			//	shell returns command line control immediately after forking off the child
-			
+		
 				/* Background process:
-				 *
-				 */
+				 * Execute command and print its pid,
+				 * fork of child and immediately return 
+				 * command line control.  */
 
+				spawnPid = fork(); 
+				
+				switch(spawnPid)
+				{
+					case -1:
+						perror("fork() failure!\n");
+						exit(1);
+						break;
+					case 0:		/* In child. */
+
+						/* Print its process ID. */
+						printf("trace\n");
+						execute(args);
+						break;
+					default:	/* In parent. */
+
+						/* Store pid in background process array. */
+						/* update size variable */
+						break;
+												
+				}
+				
 			}
 			else
 			{
@@ -107,10 +126,13 @@ int main()
 						perror("fork() failure!\n");
 						exit(1);
 						break;
-					case 0:
-						//in child
+					case 0: 	/* In child. */
 						execute(args);
 						break;
+					default;	/* In parent. */
+						//put waitpid(...) here?
+						break;
+
 				}
 
 				waitpid(spawnPid, &childExitMethod, 0); // 0 -> Block 
@@ -177,7 +199,8 @@ bool isCommand(char* userInput)
 int  determineCommand(char* userInput)
 {
 
-	/* Temporary variable to hold first word in user input's command. */
+	/* Temporary variable to hold first 
+	 * word in user input's command. */
 	char command[250]; memset(command, '\0', sizeof(command));
 
 	/* Store the first word as command. */
@@ -276,12 +299,14 @@ int formatCommand(char* userInput, char* args[])
 	args[argItr + 1] = NULL;
 
 	//TEST
+	/*
 	printf("argItr is: %d\n", argItr);
 	int i;
 	for(i = 0; i < argItr; i++)
 	{
 		printf("args[%d]: %s\n", i, args[i]);
 	}
+	*/
 	//END TEST*/
 
 	/* return the number of arguments in the array. */
