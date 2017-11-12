@@ -116,26 +116,6 @@ int main()
 				waitpid(spawnPid, &childExitMethod, 0); // 0 -> Block 
 			}
 			
-			/* SIGNAL TESTING
-			pid_t childPid = waitpid(spawnPid, &childExitMethod, 0); //0 -> Block
-			if(childPid == -1)
-			{
-				perror("Wait failed!");
-				exit(1);
-			}
-
-			if(WIFEXITED(childExitMethod))
-			{
-				//printf("Child terminated normally\n");
-				int exitStatus = WEXITSTATUS(childExitMethod);
-				//printf("exit status was: %d\n", exitStatus);
-			}
-			else
-			{
-				printf("By deduction.. child terminated by signal\n");
-			}
-			*/
-
 		} // End of non built in command block.
 
 	} // End of while(1).
