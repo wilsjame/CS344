@@ -76,39 +76,38 @@ int main()
 
 			/* Store command and any arguments in args array. */
 			numArguments = formatCommand(userInput, args);
+			
+			/* Fork off child to execute the command. */
+			spawnPid = fork(); 
+			
+			switch(spawnPid)
+			{
+				case -1:
+					perror("fork() failure!\n");
+					exit(1);
+					break;
+				case 0:		/* In child. */
+					execute(args); // Exec hollows out rest of child program.
+					break;
+				default:	/* In parent. */
+					break;
+			}
 
-			/* Determine if background or foreground process. */
+			/* Determine if command is to be run in the background 
+			 * or foreground and take appropriate action. */
 			if(isBackground(numArguments, args))
 			{
 
-			//TODO Background 
-		
 				/* Background process:
 				 * Execute command and print its pid,
 				 * fork of child and immediately return 
 				 * command line control.  */
 
-				spawnPid = fork(); 
-				
-				switch(spawnPid)
-				{
-					case -1:
-						perror("fork() failure!\n");
-						exit(1);
-						break;
-					case 0:		/* In child. */
+				/* Print its process ID. */
+				/* Store pid in background process array. */
+				/* update size variable */
 
-						/* Print its process ID. */
-						printf("trace\n");
-						execute(args);
-						break;
-					default:	/* In parent. */
-
-						/* Store pid in background process array. */
-						/* update size variable */
-						break;
-												
-				}
+				printf("background process id\n");
 				
 			}
 			else
@@ -118,26 +117,9 @@ int main()
 				 * Execute command and have shell (parent) wait
 				 * in a blocked state until child terminates. */
 
-				spawnPid = fork(); 
-
-				switch(spawnPid)
-				{
-					case -1:
-						perror("fork() failure!\n");
-						exit(1);
-						break;
-					case 0: 	/* In child. */
-						execute(args);
-						break;
-					default;	/* In parent. */
-						//put waitpid(...) here?
-						break;
-
-				}
-
 				waitpid(spawnPid, &childExitMethod, 0); // 0 -> Block 
 			}
-			
+
 		} // End of non built in command block.
 
 	} // End of while(1).
