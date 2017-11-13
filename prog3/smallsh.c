@@ -249,12 +249,14 @@ void builtInCd(char* userInput)
 
 }
 
-/* Stores command name and arguments in an array and returns 
+/* Formats command name and arguments in an array and returns 
  * true if the command is to be run in the background. */ 
 bool formatCommand(char* userInput, char* args[])
 {
 	int argItr = 0;
+	pid_t PID = getpid();
 	bool isBackground = false;
+	char PIDString[250]; memset(PIDString, '\0', 250);
 	memset(args, '\0', sizeof(args));
 
 	/* First token is the command name. */
@@ -265,9 +267,16 @@ bool formatCommand(char* userInput, char* args[])
 	{
 		argItr++;
 		args[argItr] = strtok(NULL, " ");
-	}
 
-	//printf("args[argItr - 1] is: %s\n", args[argItr - 1]);
+		/* Expand any '$$' found. */
+		if(strcmp(args[argItr - 1], "$$") == 0)
+		{
+
+			/* Convert the PID to a string. */
+			sprintf(PIDString, "%d", PID);
+			strcpy(args[argItr - 1], PIDString);
+		}
+	}
 
 	/* Check if it's a background process. */
 	if(strcmp(args[argItr - 1], "&") == 0) 
