@@ -20,31 +20,25 @@ void builtInStatus(void);
 int formatCommand(char* userInput, char* args[]);
 bool isBackground(int numArguments, char* arg[]);
 void execute(char* args[]);
+void deathCleanup(int size, pid_t trackingArray[]);
 
 int main()
 {
 	char userInput[2048];
 	char* args[512]; 
-	bool isBuiltIn;
-	int childExitMethod;
 	int numArguments;
-	pid_t spawnPid;
-
-	/* Children PID tracking array. TODO Consider making dynamic and encapsulate in struct. */
-	int pidIdx= 0;
-	pid_t trackingArray[250]; 
+	int childExitMethod;
+	int trackerSize = 0;
+	bool isBuiltIn;
+	pid_t trackingArray[250]; memset(trackingArray, '\0', 250); 
+	pid_t spawnPid;			
 
 	/* Main loop prompts and gets input from user. */
 	while(1)
 	{
 
-		//Check here if any background processes have terminated
-		//	have shell periodically check for bg processes to complete
-			//		use waitpid(..NOHANG...)
-			//	cleanup completed bg processes as shell continues to run
-			//	check and print any completed bg pid and exit status just before new prompt
-			//	remove completed bg processes from array
-
+		/* Reap terminated background processes. */
+		
 		/* Get a command from the user. */
 		do
 		{
@@ -99,24 +93,19 @@ int main()
 			{
 
 				/* Background process:
-				 * Execute command and print its pid,
-				 * fork of child and immediately return 
+				 * Print and store pid,
+				 * immediately return 
 				 * command line control.  */
-
-				/* Print its process ID. */
-				/* Store pid in background process array. */
-				/* update size variable */
-
-				printf("background process id\n");
-				
+				printf("background pid is %d\n", spawnPid);
+				trackingArray[trackerSize++] = spawnPid;
 			}
 			else
 			{
 
 				/* Foreground process:
-				 * Execute command and have shell (parent) wait
-				 * in a blocked state until child terminates. */
-
+				 * Shell (parent) waits
+				 * in a blocked state for 
+				 * child termination. */
 				waitpid(spawnPid, &childExitMethod, 0); // 0 -> Block 
 			}
 
@@ -326,5 +315,14 @@ void execute(char* args[])
 		exit(1);
 	}
 
+}
+
+//	have shell periodically check for bg processes to complete
+			//		use waitpid(..NOHANG...)
+			//	cleanup completed bg processes as shell continues to run
+			//	check and print any completed bg pid and exit status just before new prompt
+			//	remove completed bg processes from array
+void deathCleanup(int size, pid_t trackingArray[])
+{
 }
 
