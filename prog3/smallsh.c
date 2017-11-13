@@ -17,10 +17,9 @@ int  determineCommand(char* userInput);
 void builtInExit(void);
 void builtInCd(char* userInput);
 void builtInStatus(void);
-int formatCommand(char* userInput, char* args[]);
-bool isBackground(int numArguments, char* arg[]);
+bool formatCommand(char* userInput, char* args[]);
 void execute(char* args[]);
-void deathCleanup(int size, pid_t trackingArray[]);
+void orphanCleanup(int size, pid_t trackingArray[]);
 
 int main()
 {
@@ -30,6 +29,7 @@ int main()
 	int childExitMethod;
 	int trackerSize = 0;
 	bool isBuiltIn;
+	bool isBackground;
 	pid_t trackingArray[250]; memset(trackingArray, '\0', 250); 
 	pid_t spawnPid;			
 
@@ -37,12 +37,11 @@ int main()
 	while(1)
 	{
 
-		/* Reap terminated background processes. */
-		deathCleanup(trackerSize, trackingArray);
-		
-		/* Get a command from the user. */
+		/* Reap any terminated bg processes,
+		 * and prompt a command from the user. */ 
 		do
 		{
+			orphanCleanup(trackerSize, trackingArray);
 			commandPrompt(userInput);
 		}while(!(isCommand(userInput)));
 
@@ -69,9 +68,9 @@ int main()
 		if(!(isBuiltIn))
 		{
 
-			//TODO remove '&' before calling exec
-			/* Store command and any arguments in args array. */
-			numArguments = formatCommand(userInput, args);
+			/* Store command and any arguments in args array,
+			 * and determine if it's a background  process. */
+			isBackground = formatCommand(userInput, args);
 			
 			/* Fork off child to execute the command. */
 			spawnPid = fork(); 
@@ -83,15 +82,13 @@ int main()
 					exit(1);
 					break;
 				case 0:		/* In child. */
-					execute(args); // Exec hollows out rest of child program.
+					execute(args); /* Exec hollows out rest of child program. */
 					break;
 				default:	/* In parent. */
 					break;
 			}
 
-			/* Determine if command is to be run in the background 
-			 * or foreground and take appropriate action. */
-			if(isBackground(numArguments, args))
+			if(isBackground)
 			{
 
 				/* Background process:
@@ -252,10 +249,12 @@ void builtInCd(char* userInput)
 
 }
 
-/* Stores command name and arguments in an array and returns its size. */
-int formatCommand(char* userInput, char* args[])
+/* Stores command name and arguments in an array and returns 
+ * true if the command is to be run in the background. */ 
+bool formatCommand(char* userInput, char* args[])
 {
 	int argItr = 0;
+	bool isBackground = false;
 	memset(args, '\0', sizeof(args));
 
 	/* First token is the command name. */
@@ -268,41 +267,19 @@ int formatCommand(char* userInput, char* args[])
 		args[argItr] = strtok(NULL, " ");
 	}
 
-	/* Set the last argument as NULL for exec(). */
-	args[argItr + 1] = NULL;
+	//printf("args[argItr - 1] is: %s\n", args[argItr - 1]);
 
-	//TEST
-	/*
-	printf("argItr is: %d\n", argItr);
-	int i;
-	for(i = 0; i < argItr; i++)
-	{
-		printf("args[%d]: %s\n", i, args[i]);
-	}
-	*/
-	//END TEST*/
-
-	/* return the number of arguments in the array. */
-	return argItr;
-
-}
-
-/* Returns true if the command is to be run in the background. */ 
-bool isBackground(int numArguments, char* arg[])
-{
-	
-	if(strcmp(arg[numArguments - 1], "&") == 0) 
+	/* Check if it's a background process. */
+	if(strcmp(args[argItr - 1], "&") == 0) 
 	{
 
-		return true;
-		
+		/* Remove '&' and set last 
+		 * argument NULL for exec(). */
+		args[argItr - 1] = NULL;
+		isBackground = true;
 	}
-	else
-	{
 
-		return false;
-
-	}
+	return isBackground;
 
 }
 
@@ -324,7 +301,7 @@ void execute(char* args[])
 			//	cleanup completed bg processes as shell continues to run
 			//	check and print any completed bg pid and exit status just before new prompt
 			//	remove completed bg processes from array
-void deathCleanup(int size, pid_t trackingArray[])
+void orphanCleanup(int size, pid_t trackingArray[])
 {
 
 	int i, childExitMethod;;
@@ -338,7 +315,7 @@ void deathCleanup(int size, pid_t trackingArray[])
 		if(childPid == -1)
 		{
 			//perror("Wait failed in deathCleanup()!");
-			//TODO make array dynamic in nature
+			//TODO Remove completed bg ps from array, make array dynamic in nature?
 		}
 
 		if(WIFEXITED(childExitMethod))
