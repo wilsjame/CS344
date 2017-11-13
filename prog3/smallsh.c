@@ -6,9 +6,9 @@
 *********************************************************************/
 #include <stdio.h>
 #include <stdbool.h>
-#include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
 
 /* Function prototypes. */
 void commandPrompt(char* userInput);
@@ -38,6 +38,7 @@ int main()
 	{
 
 		/* Reap terminated background processes. */
+		deathCleanup(trackerSize, trackingArray);
 		
 		/* Get a command from the user. */
 		do
@@ -68,6 +69,7 @@ int main()
 		if(!(isBuiltIn))
 		{
 
+			//TODO remove '&' before calling exec
 			/* Store command and any arguments in args array. */
 			numArguments = formatCommand(userInput, args);
 			
@@ -324,5 +326,36 @@ void execute(char* args[])
 			//	remove completed bg processes from array
 void deathCleanup(int size, pid_t trackingArray[])
 {
+
+	int i, childExitMethod;;
+
+	//iterate through array 
+	for(i = 0; i < size; i++)
+	{
+		//WNOHANG return immediately if no child has exited
+		pid_t childPid = waitpid(trackingArray[i], &childExitMethod, WNOHANG);
+
+		if(childPid == -1)
+		{
+			//perror("Wait failed in deathCleanup()!");
+			//TODO make array dynamic in nature
+		}
+
+		if(WIFEXITED(childExitMethod))
+		{
+			//child terminated normally
+			int exitStatus = WEXITSTATUS(childExitMethod);
+			printf("background pid %d is done: exit value %d\n", trackingArray[i], exitStatus);
+		}
+		else 
+		{
+			//by deduction.. child must've been terminated by signal
+		
+		}
+
+	}
+
+	return;
+
 }
 
