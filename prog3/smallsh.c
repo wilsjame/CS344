@@ -33,7 +33,7 @@ int main()
 	pid_t trackingArray[250]; memset(trackingArray, '\0', 250); 
 	pid_t spawnPid;			
 
-	/* Main loop prompts and gets input from user. */
+	/* Main loop prompts input from user among other things. */
 	while(1)
 	{
 
@@ -45,7 +45,7 @@ int main()
 			commandPrompt(userInput);
 		}while(!(isCommand(userInput)));
 
-		/* Reset flag before every loop iteration. */
+		/* Reset flag every loop iteration. */
 		isBuiltIn = true;
 
 		/* Switch on built in commands and default to non built in. */
@@ -296,20 +296,17 @@ void execute(char* args[])
 
 }
 
-//	have shell periodically check for bg processes to complete
-			//		use waitpid(..NOHANG...)
-			//	cleanup completed bg processes as shell continues to run
-			//	check and print any completed bg pid and exit status just before new prompt
-			//	remove completed bg processes from array
+/* Checks for completed bg processes, determined exit status,
+ * reaps, and prints completed bg pid and exit status. */
 void orphanCleanup(int size, pid_t trackingArray[])
 {
 
 	int i, childExitMethod;;
 
-	//iterate through array 
+	/* Parse bg process tracking array. */
 	for(i = 0; i < size; i++)
 	{
-		//WNOHANG return immediately if no child has exited
+		/* WNOHANG return immediately if no child has exited. */
 		pid_t childPid = waitpid(trackingArray[i], &childExitMethod, WNOHANG);
 
 		if(childPid == -1)
@@ -320,14 +317,14 @@ void orphanCleanup(int size, pid_t trackingArray[])
 
 		if(WIFEXITED(childExitMethod))
 		{
-			//child terminated normally
+
+			/* Child terminated normally. */
 			int exitStatus = WEXITSTATUS(childExitMethod);
 			printf("background pid %d is done: exit value %d\n", trackingArray[i], exitStatus);
 		}
 		else 
 		{
-			//by deduction.. child must've been terminated by signal
-		
+			/* By deduction, child must've terminated by signal. */
 		}
 
 	}
