@@ -5,8 +5,10 @@
 ** smallsh.h
 *********************************************************************/
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
 
@@ -25,8 +27,7 @@ void builtInCd(char* userInput);
 void builtInStatus(void);
 void remove_element(char* args[], int index, int size);
 bool formatCommand(char* userInput, char* args[], struct redirect*);
-//TODO create function to determine input or output redirection is needed
-
+void redirect(struct redirect*);
 void execute(char* args[]);
 void orphanCleanup(int size, pid_t trackingArray[]);
 
@@ -34,6 +35,8 @@ int main()
 {
 	char userInput[2048];
 	char* args[512]; 
+	int sourceFD;
+	int targetFD;
 	int numArguments;
 	int childExitMethod;
 	int trackerSize = 0;
@@ -82,7 +85,6 @@ int main()
 			 * Store any redirection files in inOut struct.
 			 * Determine if it's a background  process. */
 			isBackground = formatCommand(userInput, args, &inOut);
-			printf("inOut.stdinRedirect: %s\n", inOut.stdinRedirect);
 
 			/* Fork off child to execute the command. */
 			spawnPid = fork(); 
@@ -96,19 +98,7 @@ int main()
 				case 0:		/* In child. */
 
 					/* Perform any necessary I/O redirection. */
-					if(!strcmp(inOut.stdinRedirect, "\0") == 0)
-					{
-						// Input file open read only.
-						// Cannot open, print error and set exit status to 1 (but don't exit shell).
-
-					}
-					else if(!strcmp(inOut.stdoutRedirect, "\0") == 0)
-					{
-						// Output file open write only.
-						// Truncate if it exists, created otherwise.
-						// Cannot open, print error and set exit status to 1 (but don't exit shell).
-
-					}
+					redirect(&inOut);
 
 					/* Exec hollows out rest of child program. */
 					execute(args);
@@ -362,6 +352,47 @@ bool formatCommand(char* userInput, char* args[], struct redirect* inOut)
 	}
 
 	return isBackground;
+
+}
+
+/* Perform I/O redirection. */
+void redirect(struct redirect* inOut)
+{
+	int sourceFD;
+	int targetFD;
+
+	if(!strcmp(inOut->stdinRedirect, "\0") == 0)
+	{
+		/* Input file open read only. */
+		sourceFD = open(inOut->stdinRedirect, O_RDONLY);
+
+		/* Cannot open, print error and set exit status to 1 (but don't exit shell). */
+		if(sourceFD == -1) 
+		{
+			perror("source open()");
+			exit(1); // Child exits but not parent!
+		}
+
+		/* Perform redirection. */
+		dup2(sourceFD, 0);
+	}
+	if(!strcmp(inOut->stdoutRedirect, "\0") == 0)
+	{
+		/* Output file open write only, truncate if it exists, create otherwise. */
+		targetFD = open(inOut->stdoutRedirect, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+
+		/* Cannot open, print error and set exit status to 1 (but don't exit shell). */
+		if(targetFD == -1) 
+		{
+			perror("source open()");
+			exit(1); // Child exits but not parent!
+		}
+
+		/* Perform redirection. */
+		dup2(targetFD, 1);
+	}
+
+	return;
 
 }
 
