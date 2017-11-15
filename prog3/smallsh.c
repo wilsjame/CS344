@@ -10,6 +10,12 @@
 #include <unistd.h>
 #include <string.h>
 
+struct redirect
+{
+	char stdinRedirect[250];
+	char stdoutRedirect[250];
+};
+
 /* Function prototypes. */
 void commandPrompt(char* userInput);
 bool isCommand(char* userInput);
@@ -17,7 +23,10 @@ int  determineCommand(char* userInput);
 void builtInExit(void);
 void builtInCd(char* userInput);
 void builtInStatus(void);
-bool formatCommand(char* userInput, char* args[]);
+void remove_element(char* args[], int index, int size);
+bool formatCommand(char* userInput, char* args[], struct redirect*);
+//TODO create function to determine input or output redirection is needed
+
 void execute(char* args[]);
 void orphanCleanup(int size, pid_t trackingArray[]);
 
@@ -30,6 +39,7 @@ int main()
 	int trackerSize = 0;
 	bool isBuiltIn;
 	bool isBackground;
+	struct redirect inOut;
 	pid_t trackingArray[250]; memset(trackingArray, '\0', 250); 
 	pid_t spawnPid;			
 
@@ -70,7 +80,7 @@ int main()
 
 			/* Store command and any arguments in args array,
 			 * and determine if it's a background  process. */
-			isBackground = formatCommand(userInput, args);
+			isBackground = formatCommand(userInput, args, &inOut);
 			
 			/* Fork off child to execute the command. */
 			spawnPid = fork(); 
@@ -249,43 +259,87 @@ void builtInCd(char* userInput)
 
 }
 
-/* Formats command name and arguments in an array and returns 
- * true if the command is to be run in the background. */ 
-bool formatCommand(char* userInput, char* args[])
+/* Removes an element from an array. */
+void remove_element(char* array[], int index, int size)
 {
-	int argItr = 0;
+	int i;
+	size++;
+
+	for(i = index; i < size - 1; i++)
+	{
+		array[i] = array[i + 1];
+	}
+
+}
+
+/* Formats command name and arguments in an array,
+ * extracts any stdin or stdout redirection, and returns
+ * true if the command is to be run in the background. */ 
+bool formatCommand(char* userInput, char* args[], struct redirect* inOut)
+{
+	int argItr, argSize = 0;
 	pid_t PID = getpid();
 	bool isBackground = false;
 	char PIDString[250]; memset(PIDString, '\0', 250);
+
 	memset(args, '\0', sizeof(args));
+	memset(inOut->stdinRedirect, '\0', 250);
+	memset(inOut->stdoutRedirect, '\0', 250);
 
 	/* First token is the command name. */
-	args[argItr] = strtok(userInput, " ");
+	args[argSize] = strtok(userInput, " ");
 	
 	/* Remaining tokens (if any) are additional arguments. */
-	while(args[argItr] != NULL)
+	while(args[argSize] != NULL)
 	{
-		argItr++;
-		args[argItr] = strtok(NULL, " ");
+		argSize++;
+		args[argSize] = strtok(NULL, " ");
 
 		/* Expand any '$$' found. */
-		if(strcmp(args[argItr - 1], "$$") == 0)
+		if(strcmp(args[argSize - 1], "$$") == 0)
 		{
 
+			//TODO use atoi() utility function here
 			/* Convert the PID to a string. */
 			sprintf(PIDString, "%d", PID);
-			strcpy(args[argItr - 1], PIDString);
+			strcpy(args[argSize - 1], PIDString);
 		}
+
 	}
 
 	/* Check if it's a background process. */
-	if(strcmp(args[argItr - 1], "&") == 0) 
+	if(strcmp(args[argSize - 1], "&") == 0) 
 	{
 
 		/* Remove '&' and set last 
 		 * argument NULL for exec(). */
-		args[argItr - 1] = NULL;
+		args[--argSize] = NULL;
 		isBackground = true;
+	}
+
+	/* Parse arguments for I/O redirection. */
+	for(argItr = 0; argItr < argSize; argItr++)
+	{
+
+		if(strcmp(args[argItr], "<") == 0 || strcmp(args[argItr], ">") == 0) 
+		{
+
+			/* The next argument is the redirection file. */
+			if(strcmp(args[argItr], "<" ) == 0)
+			{
+				strcpy(inOut->stdinRedirect, args[argItr + 1]);
+			}
+			else if(strcmp(args[argItr], ">" ) == 0)
+			{
+				strcpy(inOut->stdoutRedirect, args[argItr + 1]);
+			}
+
+			/* Remove '<' or '>' and 'input_file' from arguments. */
+			remove_element(args, argItr, argSize--);
+			remove_element(args, argItr, argSize--);
+			argItr--;
+		}
+
 	}
 
 	return isBackground;
