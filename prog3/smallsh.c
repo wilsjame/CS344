@@ -11,6 +11,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
+#include <signal.h>
 
 struct redirect
 {
@@ -43,6 +44,17 @@ int main()
 	struct redirect inOut;
 	pid_t trackingArray[250]; memset(trackingArray, '\0', 250); 
 	pid_t spawnPid;			
+
+	/* Signal handling. */
+	struct sigaction SIGSTP_action = {0};
+	struct sigaction ignore_action = {0};
+	struct sigaction default_action = {0};
+
+	ignore_action.sa_handler = SIG_IGN;
+	default_action.sa_handler = SIG_DFL;
+
+	/* Ignore SIGINT in parent, inherited by children. */
+	sigaction(SIGINT, &ignore_action, NULL);
 
 	/* Main loop prompts input from user among other things. */
 	while(1)
@@ -94,6 +106,12 @@ int main()
 					exit(1);
 					break;
 				case 0:		/* In child. */
+
+					/* Enable SIGINT if foreground. */
+					if(!isBackground)
+					{
+						sigaction(SIGINT, &default_action, NULL);
+					}
 
 					/* Perform any necessary I/O redirection. */
 					redirect(&inOut, isBackground);
@@ -353,6 +371,7 @@ bool formatCommand(char* userInput, char* args[], struct redirect* inOut)
 
 }
 
+//TODO condense logic
 /* Perform I/O redirection. */
 void redirect(struct redirect* inOut, bool isBackground)
 {
