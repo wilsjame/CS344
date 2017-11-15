@@ -78,10 +78,12 @@ int main()
 		if(!(isBuiltIn))
 		{
 
-			/* Store command and any arguments in args array,
-			 * and determine if it's a background  process. */
+			/* Store command and any arguments in args array. 
+			 * Store any redirection files in inOut struct.
+			 * Determine if it's a background  process. */
 			isBackground = formatCommand(userInput, args, &inOut);
-			
+			printf("inOut.stdinRedirect: %s\n", inOut.stdinRedirect);
+
 			/* Fork off child to execute the command. */
 			spawnPid = fork(); 
 			
@@ -92,7 +94,24 @@ int main()
 					exit(1);
 					break;
 				case 0:		/* In child. */
-					execute(args); /* Exec hollows out rest of child program. */
+
+					/* Perform any necessary I/O redirection. */
+					if(!strcmp(inOut.stdinRedirect, "\0") == 0)
+					{
+						// Input file open read only.
+						// Cannot open, print error and set exit status to 1 (but don't exit shell).
+
+					}
+					else if(!strcmp(inOut.stdoutRedirect, "\0") == 0)
+					{
+						// Output file open write only.
+						// Truncate if it exists, created otherwise.
+						// Cannot open, print error and set exit status to 1 (but don't exit shell).
+
+					}
+
+					/* Exec hollows out rest of child program. */
+					execute(args);
 					break;
 				default:	/* In parent. */
 					break;
