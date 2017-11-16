@@ -13,12 +13,7 @@
 #include <string.h>
 #include <signal.h>
 
-//TODO 
-// SIGSTP handling
-// built in status()
-// make sure built in exit() meets requirements
-
-/* User defined struct(s). */
+/* Encapsulate IO redirection. */
 struct redirect
 {
 	char stdinRedirect[250];
@@ -38,9 +33,9 @@ void redirect(struct redirect*, bool isBackground);
 void execute(char* args[]);
 void orphanCleanup(int size, pid_t trackingArray[]);
 
-/* Signal handling function(s). */
-bool bgON = true;
-void catchSIGTSTP(int signo) /* CTRL+Z toggles modes. */
+/* Signal handling trap. */
+bool bgON = true; /* Global. */
+void catchSIGTSTP(int signo) /* CTRL+Z toggles fg only mode. */
 {
 
 	if(bgON == true)
@@ -83,7 +78,7 @@ int main()
 	ignore_action.sa_handler = SIG_IGN;
 	default_action.sa_handler = SIG_DFL;
 
-	/* Register handlers. Note: children will inherit. */
+	/* Register handlers. Note: children inherit. */
 	sigaction(SIGTSTP, &SIGTSTP_action, NULL);
 	sigaction(SIGINT, &ignore_action, NULL); 
 	
@@ -165,6 +160,7 @@ int main()
 				 * immediately return 
 				 * command line control.  */
 				printf("background pid is %d\n", spawnPid);
+				fflush(NULL);
 				trackingArray[trackerSize++] = spawnPid;
 			}
 			else
@@ -175,7 +171,6 @@ int main()
 				 * in a blocked state for 
 				 * child termination. */
 				waitpid(spawnPid, &childExitMethod, 0); // 0 -> Block 
-		
 			}
 
 		} // End of non built in command block.
@@ -457,7 +452,7 @@ void redirect(struct redirect* inOut, bool isBackground)
 		/* Cannot open, print error and set exit status to 1 (but don't exit shell). */
 		if(sourceFD == -1) 
 		{
-			perror("source open()");
+			printf("IO redirection failure!\n");
 			exit(1); // Child exits but not parent!
 		}
 
@@ -474,7 +469,7 @@ void redirect(struct redirect* inOut, bool isBackground)
 		/* Cannot open, print error and set exit status to 1 (but don't exit shell). */
 		if(targetFD == -1) 
 		{
-			perror("source open()");
+			printf("IO redirection failure!\n");
 			exit(1); // Child exits but not parent!
 		}
 
@@ -492,7 +487,7 @@ void redirect(struct redirect* inOut, bool isBackground)
 		/* Cannot open, print error and set exit status to 1 (but don't exit shell). */
 		if(sourceFD == -1) 
 		{
-			perror("source open()");
+			printf("IO redirection failure!\n");
 			exit(1); // Child exits but not parent!
 		}
 
@@ -509,7 +504,7 @@ void redirect(struct redirect* inOut, bool isBackground)
 		/* Cannot open, print error and set exit status to 1 (but don't exit shell). */
 		if(targetFD == -1) 
 		{
-			perror("source open()");
+			printf("IO redirection failure!\n");
 			exit(1); // Child exits but not parent!
 		}
 
@@ -528,7 +523,8 @@ void execute(char* args[])
 	/* *args == args[0]. */
 	if(execvp(*args, args) < 0)
 	{
-		perror("Exec failure!");
+		perror("exec() failure! ");
+		fflush(NULL);
 		exit(1);
 	}
 
@@ -559,6 +555,7 @@ void orphanCleanup(int size, pid_t trackingArray[])
 			/* Child terminated normally. */
 			int exitStatus = WEXITSTATUS(childExitMethod);
 			printf("background pid %d is done: exit value %d\n", trackingArray[i], exitStatus);
+			fflush(NULL);
 		}
 		else 
 		{
