@@ -458,7 +458,8 @@ void redirect(struct redirect* inOut, bool isBackground)
 		/* Cannot open, print error and set exit status to 1 (but don't exit shell). */
 		if(sourceFD == -1) 
 		{
-			perror("IO redirect failure!");
+			//perror("IO redirect failure!");
+			printf("IO redirect failure!\n"); fflush(NULL);
 			exit(1); // Child exits but not parent!
 		}
 
@@ -475,7 +476,8 @@ void redirect(struct redirect* inOut, bool isBackground)
 		/* Cannot open, print error and set exit status to 1 (but don't exit shell). */
 		if(targetFD == -1) 
 		{
-			perror("IO redirect failure!");
+			//perror("IO redirect failure!");
+			printf("IO redirect failure!\n"); fflush(NULL);
 			exit(1); // Child exits but not parent!
 		}
 
@@ -493,7 +495,8 @@ void redirect(struct redirect* inOut, bool isBackground)
 		/* Cannot open, print error and set exit status to 1 (but don't exit shell). */
 		if(sourceFD == -1) 
 		{
-			perror("IO redirect failure!");
+			//perror("IO redirect failure!");
+			printf("IO redirect failure!\n"); fflush(NULL);
 			exit(1); // Child exits but not parent!
 		}
 
@@ -510,7 +513,8 @@ void redirect(struct redirect* inOut, bool isBackground)
 		/* Cannot open, print error and set exit status to 1 (but don't exit shell). */
 		if(targetFD == -1) 
 		{
-			perror("IO redirect failure!");
+			//perror("IO redirect failure!");
+			printf("IO redirect failure!\n"); fflush(NULL);
 			exit(1); // Child exits but not parent!
 		}
 
@@ -529,7 +533,9 @@ void execute(char* args[])
 	/* *args == args[0]. */
 	if(execvp(*args, args) < 0)
 	{
-		perror("Exec failure!");
+		//perror("Exec failure!");
+		printf("Exec failure!\n");
+		fflush(NULL);
 		exit(1);
 	}
 
