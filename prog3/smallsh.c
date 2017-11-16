@@ -13,6 +13,12 @@
 #include <string.h>
 #include <signal.h>
 
+//TODO 
+// SIGSTP handling
+// built in status()
+// make sure built in exit() meets requirements
+
+/* User defined struct(s). */
 struct redirect
 {
 	char stdinRedirect[250];
@@ -32,6 +38,14 @@ void redirect(struct redirect*, bool isBackground);
 void execute(char* args[]);
 void orphanCleanup(int size, pid_t trackingArray[]);
 
+/* Signal handling function(s). */
+void catchSIGTSTP(int signo)
+{
+	// Display a message (remember to flush)
+	// Enter a fg only state
+	//	If called again, cycle between bg only and fg only...
+}
+
 int main()
 {
 	char userInput[2048];
@@ -46,16 +60,17 @@ int main()
 	pid_t spawnPid;			
 
 	/* Signal handling. */
-	struct sigaction SIGSTP_action = {0};
+	struct sigaction SIGTSTP_action = {0};
 	struct sigaction ignore_action = {0};
 	struct sigaction default_action = {0};
 
+	SIGTSTP_action.sa_handler = catchSIGTSTP;
 	ignore_action.sa_handler = SIG_IGN;
 	default_action.sa_handler = SIG_DFL;
 
-	/* Ignore SIGINT in parent, inherited by children. */
-	sigaction(SIGINT, &ignore_action, NULL);
-
+	sigaction(SIGTSTP, &SIGTSTP_action, NULL);
+	sigaction(SIGINT, &ignore_action, NULL); /* Ignore SIGINT in parent, inherited by children. */
+	
 	/* Main loop prompts input from user among other things. */
 	while(1)
 	{
@@ -107,7 +122,10 @@ int main()
 					break;
 				case 0:		/* In child. */
 
-					/* Enable SIGINT if foreground. */
+					/* Ignore SIGTSTP and enable
+					 * SIGINT if foreground. */
+					sigaction(SIGTSTP, &ignore_action, NULL);
+
 					if(!isBackground)
 					{
 						sigaction(SIGINT, &default_action, NULL);
@@ -302,10 +320,12 @@ void remove_element(char* array[], int index, int size)
  * true if the command is to be run in the background. */ 
 bool formatCommand(char* userInput, char* args[], struct redirect* inOut)
 {
-	int argItr, argSize = 0;
+	int index, argItr, argSize = 0;
 	pid_t PID = getpid();
 	bool isBackground = false;
 	char PIDString[250]; memset(PIDString, '\0', 250);
+	char tempArgument[250]; memset(tempArgument, '\0', 250);
+	char expandTemp[250]; memset(expandTemp, '\0', 250);
 
 	memset(args, '\0', sizeof(args));
 	memset(inOut->stdinRedirect, '\0', 250);
@@ -320,14 +340,23 @@ bool formatCommand(char* userInput, char* args[], struct redirect* inOut)
 		argSize++;
 		args[argSize] = strtok(NULL, " ");
 
-		/* Expand any '$$' found. */
-		if(strcmp(args[argSize - 1], "$$") == 0)
-		{
+		/* Cool trick to expand $$ from Piazza. */
+		memset(tempArgument, '\0', 250);
+		memset(expandTemp, '\0', 250);
 
-			//TODO use atoi() utility function here
-			/* Convert the PID to a string. */
-			sprintf(PIDString, "%d", PID);
-			strcpy(args[argSize - 1], PIDString);
+		strcpy(tempArgument, args[argSize - 1]);
+
+		if(strstr(tempArgument, "$$") != NULL)
+		{
+			index = strstr(tempArgument, "$$") - tempArgument;
+			tempArgument[index] = '%';
+
+			index = strstr(tempArgument, "$") - tempArgument;
+			tempArgument[index] = 'd';
+
+			sprintf(expandTemp, tempArgument, getpid());
+			strcpy(args[argSize - 1], expandTemp);
+
 		}
 
 	}
