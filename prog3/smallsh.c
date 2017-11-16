@@ -31,6 +31,7 @@ void remove_element(char* args[], int index, int size);
 bool formatCommand(char* userInput, char* args[], struct redirect*);
 void redirect(struct redirect*, bool isBackground);
 void execute(char* args[]);
+void checkTerminationStatus(int exitMethod);
 void orphanCleanup(int size, pid_t trackingArray[]);
 
 /* Signal handling trap. */
@@ -171,6 +172,8 @@ int main()
 				 * in a blocked state for 
 				 * child termination. */
 				waitpid(spawnPid, &childExitMethod, 0); // 0 -> Block 
+				checkTerminationStatus(childExitMethod);
+				
 			}
 
 		} // End of non built in command block.
@@ -523,10 +526,26 @@ void execute(char* args[])
 	/* *args == args[0]. */
 	if(execvp(*args, args) < 0)
 	{
-		perror("exec() failure! ");
+		printf("exec() failure!\n");
 		fflush(NULL);
 		exit(1);
 	}
+
+}
+
+/* Prints termination signal, if any. */
+void checkTerminationStatus(int exitMethod)
+{
+
+	if(WIFSIGNALED(exitMethod))
+	{
+
+		/* Child terminated by a signal. */
+		printf("Terminated by signal %d\n", WTERMSIG(exitMethod));
+		fflush(NULL);
+	}
+
+	return;
 
 }
 
