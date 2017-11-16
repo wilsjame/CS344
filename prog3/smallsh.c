@@ -342,7 +342,7 @@ void builtInStatus(int exitMethod)
 
 	return;
 }
-/* Removes an element from an array. */
+/* Removes an element from string array. */
 void remove_element(char* array[], int index, int size)
 {
 	int i;
@@ -556,17 +556,18 @@ void orphanCleanup(int size, pid_t trackingArray[])
 
 	int i, childExitMethod;;
 
+	//DEBUGGING
+	for(i = 0; i < size; i++)
+	{
+		printf("bg trackingArray[%d]: %d\n", i, trackingArray[i]);
+	}
+
 	/* Parse bg process tracking array. */
 	for(i = 0; i < size; i++)
 	{
-		/* WNOHANG return immediately if no child has exited. */
-		pid_t childPid = waitpid(trackingArray[i], &childExitMethod, WNOHANG);
 
-		if(childPid == -1)
-		{
-			//perror("Wait failed in deathCleanup()!");
-			//TODO Remove completed bg ps from array, make array dynamic in nature?
-		}
+		/* WNOHANG return immediately if no child has exited. */
+		waitpid(trackingArray[i], &childExitMethod, WNOHANG);
 
 		if(WIFEXITED(childExitMethod))
 		{
@@ -575,10 +576,14 @@ void orphanCleanup(int size, pid_t trackingArray[])
 			int exitStatus = WEXITSTATUS(childExitMethod);
 			printf("background pid %d is done: exit value %d\n", trackingArray[i], exitStatus);
 			fflush(NULL);
+
 		}
 		else 
 		{
-			/* By deduction, child must've terminated by signal. */
+
+			/* Terminated by signal. */
+			printf("Terminated by signal %d\n", WTERMSIG(childExitMethod));
+			fflush(NULL);
 		}
 
 	}
