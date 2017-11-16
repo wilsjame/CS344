@@ -29,7 +29,7 @@ struct redirect
 void commandPrompt(char* userInput);
 bool isCommand(char* userInput);
 int  determineCommand(char* userInput);
-void builtInExit(void);
+void builtInExit(int size, pid_t trackingArray[]);
 void builtInCd(char* userInput);
 void builtInStatus(void);
 void remove_element(char* args[], int index, int size);
@@ -39,11 +39,25 @@ void execute(char* args[]);
 void orphanCleanup(int size, pid_t trackingArray[]);
 
 /* Signal handling function(s). */
-void catchSIGTSTP(int signo)
+bool bgON = true;
+void catchSIGTSTP(int signo) /* CTRL+Z toggles modes. */
 {
-	// Display a message (remember to flush)
-	// Enter a fg only state
-	//	If called again, cycle between bg only and fg only...
+
+	if(bgON == true)
+	{
+		char* message = "Entering foreground-only mode (& is now ignored)\n: ";
+		write(STDOUT_FILENO, message, 51);
+		fflush(NULL);
+		bgON = false;
+	}
+	else if(bgON == false)
+	{
+		char* message = "Exiting foreground-only mode\n: ";
+		write(STDOUT_FILENO, message, 31);
+		fflush(NULL);
+		bgON = true;
+	}
+			
 }
 
 int main()
@@ -65,11 +79,13 @@ int main()
 	struct sigaction default_action = {0};
 
 	SIGTSTP_action.sa_handler = catchSIGTSTP;
+	SIGTSTP_action.sa_flags = SA_RESTART;
 	ignore_action.sa_handler = SIG_IGN;
 	default_action.sa_handler = SIG_DFL;
 
+	/* Register handlers. Note: children will inherit. */
 	sigaction(SIGTSTP, &SIGTSTP_action, NULL);
-	sigaction(SIGINT, &ignore_action, NULL); /* Ignore SIGINT in parent, inherited by children. */
+	sigaction(SIGINT, &ignore_action, NULL); 
 	
 	/* Main loop prompts input from user among other things. */
 	while(1)
@@ -90,7 +106,7 @@ int main()
 		switch(determineCommand(userInput))
 		{
 			case 0: 
-				builtInExit();
+				builtInExit(trackerSize, trackingArray);
 				break;
 			case 1:
 				builtInCd(userInput);
@@ -141,7 +157,7 @@ int main()
 					break;
 			}
 
-			if(isBackground)
+			if(isBackground && bgON)
 			{
 
 				/* Background process:
@@ -257,12 +273,16 @@ int  determineCommand(char* userInput)
 }
 
 /* Kill other processes or jobs started by the shell then terminate itself. */
-void builtInExit()
+void builtInExit(int size, pid_t trackingArray[])
 {
-	//TODO
-	//kill any processes or jobs that the shell has started 
-	//consider using an array of PID's 
-	
+	int i;
+
+	/* Parse bg process tracking array and kill. */
+	for(i = 0; i < size; i++)
+	{
+		kill(trackingArray[i], SIGKILL);
+	}
+
 	exit(EXIT_SUCCESS);
 
 }
@@ -356,7 +376,6 @@ bool formatCommand(char* userInput, char* args[], struct redirect* inOut)
 
 			sprintf(expandTemp, tempArgument, getpid());
 			strcpy(args[argSize - 1], expandTemp);
-
 		}
 
 	}
