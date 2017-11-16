@@ -31,7 +31,7 @@ bool isCommand(char* userInput);
 int  determineCommand(char* userInput);
 void builtInExit(int size, pid_t trackingArray[]);
 void builtInCd(char* userInput);
-void builtInStatus(void);
+void builtInStatus(int exitMethod);
 void remove_element(char* args[], int index, int size);
 bool formatCommand(char* userInput, char* args[], struct redirect*);
 void redirect(struct redirect*, bool isBackground);
@@ -112,7 +112,7 @@ int main()
 				builtInCd(userInput);
 				break;
 			case 2:
-				printf("call status\n");
+				builtInStatus(childExitMethod);
 				break;
 			default:
 				isBuiltIn = false;
@@ -175,6 +175,7 @@ int main()
 				 * in a blocked state for 
 				 * child termination. */
 				waitpid(spawnPid, &childExitMethod, 0); // 0 -> Block 
+		
 			}
 
 		} // End of non built in command block.
@@ -235,7 +236,7 @@ bool isCommand(char* userInput)
 }
 
 /* Built-in commands return 0, 1, or 2 otherwise return 3. */
-int  determineCommand(char* userInput)
+int determineCommand(char* userInput)
 {
 
 	/* Temporary variable to hold first 
@@ -322,6 +323,27 @@ void builtInCd(char* userInput)
 
 }
 
+/* Print exit status or terminating signal of the last foreground
+ * process (not both, ps killed by signals don't have exit statuses!). */
+void builtInStatus(int exitMethod)  
+{
+
+	if(WIFEXITED(exitMethod))
+	{
+
+		/* Child terminated normally. */
+		printf("Foreground exit value %d\n", WEXITSTATUS(exitMethod));
+		fflush(NULL);
+	}
+	else 
+	{
+		/* By deduction, child must've terminated by signal. */
+		printf("Terminated by signal %d\n", WTERMSIG(exitMethod));
+		fflush(NULL);
+	}
+
+	return;
+}
 /* Removes an element from an array. */
 void remove_element(char* array[], int index, int size)
 {
