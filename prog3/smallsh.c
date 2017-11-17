@@ -1,6 +1,6 @@
 /*********************************************************************
 ** Author: James G Wilson
-** Date: 11/4/2017
+** Date: 11/16/2017
 ** Description: Program 3 CS 344
 ** smallsh.h
 *********************************************************************/
@@ -35,7 +35,7 @@ void checkTerminationStatus(int exitMethod);
 void orphanCleanup(int size, pid_t trackingArray[]);
 
 /* Signal handling trap. */
-bool bgON = true; /* Global. */
+bool bgON = true; /* Global. Mr. Worldwide lool. */
 void catchSIGTSTP(int signo) /* CTRL+Z toggles fg only mode. */
 {
 
@@ -554,36 +554,34 @@ void checkTerminationStatus(int exitMethod)
 void orphanCleanup(int size, pid_t trackingArray[])
 {
 
-	int i, childExitMethod;;
-
-	//DEBUGGING
-	for(i = 0; i < size; i++)
-	{
-		printf("bg trackingArray[%d]: %d\n", i, trackingArray[i]);
-	}
+	int i, childExitMethod;
 
 	/* Parse bg process tracking array. */
 	for(i = 0; i < size; i++)
 	{
 
 		/* WNOHANG return immediately if no child has exited. */
-		waitpid(trackingArray[i], &childExitMethod, WNOHANG);
+		pid_t waitpidReturn = waitpid(trackingArray[i], &childExitMethod, WNOHANG);
 
-		if(WIFEXITED(childExitMethod))
+		if(waitpidReturn == trackingArray[i])
 		{
 
-			/* Child terminated normally. */
-			int exitStatus = WEXITSTATUS(childExitMethod);
-			printf("background pid %d is done: exit value %d\n", trackingArray[i], exitStatus);
-			fflush(NULL);
+			if(WIFEXITED(childExitMethod))
+			{
 
-		}
-		else 
-		{
+				/* Child terminated normally. */
+				printf("background pid %d is done: exit value %d\n", trackingArray[i], WEXITSTATUS(childExitMethod));
+				fflush(NULL);
 
-			/* Terminated by signal. */
-			printf("Terminated by signal %d\n", WTERMSIG(childExitMethod));
-			fflush(NULL);
+			}
+			else 
+			{
+
+				/* Terminated by signal. */
+				printf("Background pid %d terminated by signal %d\n", trackingArray[i], WTERMSIG(childExitMethod));
+				fflush(NULL);
+			}
+
 		}
 
 	}
