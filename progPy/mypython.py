@@ -1,4 +1,6 @@
 # Program Py - CS 344
+# James Wilson (wilsjame)
+# Fri Nov 24, 2017
 
 import random
 import string
