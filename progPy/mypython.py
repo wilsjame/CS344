@@ -35,3 +35,10 @@ for file in fList:
 
 # Generate two random integers (1-42 range inclusive). 
 # Print them and their product.
+
+randNum1 = random.randint(1, 42)
+randNum2 = random.randint(1, 42)
+product = randNum1 * randNum2
+
+print(str(randNum1) + "*" + str(randNum2) + "=" + str(product))
+
