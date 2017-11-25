@@ -1,27 +1,37 @@
-""" 
-Program Py - CS 344
-"""
-print "Program Py!"
+# Program Py - CS 344
 
-# create 3 files in the same directory
-#	names are up to you
+import random
+import string
 
-file1 = "elephantPy"
-file2 = "humanityPy"
-file3 = "taxiPy"
+# Create 3 files in the same directory.
 
-open(file1, 'w')
-open(file2, 'w')
-open(file3, 'w')
+fList = []
 
-# fill each file with 10 random characters from the lowercase alphabet (no spaces)
-#	the 11th character should be a newline character '\n'
+f1 = open("elephantPy", 'w')
+f2 = open("humanityPy", 'w')
+f3 = open("taxiPy", 'w')
 
+fList.append(f1)
+fList.append(f2)
+fList.append(f3)
 
+# Fill files with 10 random characters from the lowercase alphabet (no spaces)
+# followed by a newline character. Print the contents as well.
 
-# print contents of 3 files it is creating (dump contents created or parse - whichever easier) 
-# generate two random integers (1-42 range inclusive)
-#	print them
-# 	calculate product
-#		print it
-# done! :)
+for file in fList:
+
+	list = []
+
+	for i in range(10):
+		list.append(random.choice(string.ascii_lowercase))
+
+	list.append('\n')
+
+	for char in list:
+		print(char, end = "")
+
+	for i in list:
+		file.write(i)
+
+# Generate two random integers (1-42 range inclusive). 
+# Print them and their product.
