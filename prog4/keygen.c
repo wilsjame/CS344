@@ -6,11 +6,13 @@
 *********************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 main(int argc, char *argv[])
 {
 	int keyLength;
 	char key[1024] = {0};
+	srand(time(NULL));
 	
 	/* Generate key */
 	keyLength = atoi(argv[1]); 
