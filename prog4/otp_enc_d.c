@@ -16,6 +16,35 @@
 
 void error(const char *msg) { perror(msg); exit(0); } // Error function used for reporting issues
 
+/*	USAGE 
+ * ./server listeningPort &
+ * ./otp_enc_d listeningPort &
+ */
+
+/*	OUTLINE
+ * Output error if it cannot connect to the listening port upon execution.
+ * Listen on the command line assigned  port/socket.
+ * When a connection is made:
+ * 	Call accept() generating the socket used for communication.
+ * 	Use a seperate process to handle the rest of the transaction,
+ * 		which will occur on the newly adccepted socket.
+ *
+ * Child process now:
+ * 	Check/verfiy it is communicating with otp_enc (client sise encryption).
+ * 	Receive from otp_enc:
+ * 		plaintext and key via communication socket (not the original listen socket).
+ * 	Write back ciphertext to otp_enc process it's connected to cia the same communcation socket.
+ * 	NOTE: Key passed in must be at least as big as the plaintext.
+ *
+ * More notes:
+ * 	Support up to 5 concurrent sockets.
+ * 	Fork method or pool method.
+ * 	Error situations, see Canvas.
+ * 	Anything else on Canvas.
+ *
+ */
+ 
+
 int main(int argc, char *argv[])
 {
 	int socketFD, portNumber, charsWritten, charsRead;
