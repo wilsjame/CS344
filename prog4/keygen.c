@@ -10,14 +10,21 @@
 main(int argc, char *argv[])
 {
 	int keyLength;
+	char key[1024] = {0};
+	
+	/* Generate key */
+	keyLength = atoi(argv[1]); 
 
-	keyLength = atoi(argv[1]); /* store command line argument */
+	while(keyLength-- > 0)
+	{
+		key[keyLength] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ "[random() % 27];
+		printf("%c", key[keyLength]);
 
+	}
+
+	printf("\n");
+	
 	return;
 
 }
-
-// Generate specified amount of random character pulling from the 26 capitol letters and space char
-// send the generated characters to stdout
-// 	last output should be a newline character +1 characters from argument in total
 
