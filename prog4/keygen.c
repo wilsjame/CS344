@@ -14,7 +14,7 @@ main(int argc, char *argv[])
 	char key[1024] = {0};
 	srand(time(NULL));
 	
-	/* Generate key */
+	/* Generate key. */
 	keyLength = atoi(argv[1]); 
 
 	while(keyLength-- > 0)
