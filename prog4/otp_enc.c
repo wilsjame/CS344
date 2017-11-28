@@ -16,6 +16,8 @@
 
 void error(const char *msg) { perror(msg); exit(0); } // Error function used for reporting issues
 
+void errorChecking(char* plaintextFileName, char* keyFileName);
+
 /*	USAGE
  * ./otp_enc plaintext key port
  *
@@ -47,6 +49,9 @@ int main(int argc, char *argv[])
 	struct hostent* serverHostInfo;
 	char buffer[256];
 
+	char key[10533]; memset(key, '\0', sizeof(key));
+	char plaintext[10533]; memset(key, '\0', sizeof(key));
+
 	/* Usage. */
 	// ./otp_enc plaintext key port
     	if (argc < 4) { fprintf(stderr,"USAGE: %s plaintext key port\n", argv[0]); exit(0); } // Check usage & args
@@ -68,6 +73,8 @@ int main(int argc, char *argv[])
 	// Check key file for bad characters
 	// Check plaintext file for bad characters
 	// Check if key is shorter than plaintext
+	errorChecking(argv[1], argv[2]);
+
 	// Check if the port given cannot be found
 	// Check if connecting to otp_dec_d (port?) not allowed!
 	
@@ -94,3 +101,27 @@ int main(int argc, char *argv[])
 	close(socketFD); // Close the socket
 	return 0;
 }
+
+void errorChecking(char* plaintextFileName, char* keyFileName)
+{
+	FILE* plaintextFile = fopen(plaintextFileName, "r");
+	FILE* keyFile = fopen(keyFileName, "r");
+	long plaintextSize;
+	long keySize;
+
+	if(plaintextFile == NULL || keyFile == NULL)
+	{
+		printf("Error opening plaintext or key!\n");
+	}
+
+	/* Get length or plaintext. */
+	/* Get length of */
+	// get length of key
+	// compare lengths
+	
+
+
+	return;
+
+}
+
