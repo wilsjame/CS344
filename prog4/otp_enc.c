@@ -46,23 +46,31 @@ int main(int argc, char *argv[])
 	struct sockaddr_in serverAddress;
 	struct hostent* serverHostInfo;
 	char buffer[256];
-    
-	if (argc < 3) { fprintf(stderr,"USAGE: %s hostname port\n", argv[0]); exit(0); } // Check usage & args
+
+	/* Usage. */
+	// ./otp_enc plaintext key port
+    	if (argc < 4) { fprintf(stderr,"USAGE: %s plaintext key port\n", argv[0]); exit(0); } // Check usage & args
 
 	// Set up the server address struct
 	memset((char*)&serverAddress, '\0', sizeof(serverAddress)); // Clear out the address struct
-	portNumber = atoi(argv[2]); // Get the port number, convert to an integer from a string
+	portNumber = atoi(argv[4]); // Get the port number, convert to an integer from a string
 	serverAddress.sin_family = AF_INET; // Create a network-capable socket
 	serverAddress.sin_port = htons(portNumber); // Store the port number
-	serverHostInfo = gethostbyname(argv[1]); // Convert the machine name into a special form of address
+	serverHostInfo = gethostbyname("localhost"); // Convert the machine name into a special form of address
 	if (serverHostInfo == NULL) { fprintf(stderr, "CLIENT: ERROR, no such host\n"); exit(0); }
 	memcpy((char*)&serverAddress.sin_addr.s_addr, (char*)serverHostInfo->h_addr, serverHostInfo->h_length); // Copy in the address
 
 	// Set up the socket
 	socketFD = socket(AF_INET, SOCK_STREAM, 0); // Create the socket
 	if (socketFD < 0) error("CLIENT: ERROR opening socket");
+
+	/* Error checking. */
+	// Check key file for bad characters
+	// Check plaintext file for bad characters
+	// Check if key is shorter than plaintext
+	// Check if the port given cannot be found
+	// Check if connecting to otp_dec_d (port?) not allowed!
 	
-	// Connect to server
 	if (connect(socketFD, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) < 0) // Connect socket to address
 		error("CLIENT: ERROR connecting");
 
