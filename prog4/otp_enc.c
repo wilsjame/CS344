@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
 	char buffer[256];
 
 	char key[10533]; memset(key, '\0', sizeof(key));
-	char plaintext[10533]; memset(key, '\0', sizeof(key));
+	char plaintext[10533]; memset(plaintext, '\0', sizeof(plaintext));
 
 	/* Usage. */
 	// ./otp_enc plaintext key port
@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
 
 	// Set up the server address struct
 	memset((char*)&serverAddress, '\0', sizeof(serverAddress)); // Clear out the address struct
-	portNumber = atoi(argv[4]); // Get the port number, convert to an integer from a string
+	portNumber = atoi(argv[3]); // Get the port number, convert to an integer from a string
 	serverAddress.sin_family = AF_INET; // Create a network-capable socket
 	serverAddress.sin_port = htons(portNumber); // Store the port number
 	serverHostInfo = gethostbyname("localhost"); // Convert the machine name into a special form of address
@@ -78,6 +78,7 @@ int main(int argc, char *argv[])
 	// Check if the port given cannot be found
 	// Check if connecting to otp_dec_d (port?) not allowed!
 	
+	/*
 	if (connect(socketFD, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) < 0) // Connect socket to address
 		error("CLIENT: ERROR connecting");
 
@@ -99,6 +100,8 @@ int main(int argc, char *argv[])
 	printf("CLIENT: I received this from the server: \"%s\"\n", buffer);
 
 	close(socketFD); // Close the socket
+	*/
+
 	return 0;
 }
 
@@ -114,12 +117,20 @@ void errorChecking(char* plaintextFileName, char* keyFileName)
 		printf("Error opening plaintext or key!\n");
 	}
 
-	/* Get length or plaintext. */
-	/* Get length of */
-	// get length of key
-	// compare lengths
-	
+	/* Get length of plaintext. */
+	fseek(plaintextFile, 0, SEEK_END);
+	plaintextSize = ftell(plaintextFile);
+	fseek(plaintextFile, 0, SEEK_SET);
 
+	/* Get length of key. */
+	fseek(keyFile, 0, SEEK_END);
+	keySize = ftell(keyFile);
+	fseek(keyFile, 0, SEEK_SET);
+
+	/* Compare lengths. */
+	//testing
+	printf("plaintext length is: %d\n", plaintextSize);
+	printf("key length is: %d\n", keySize);
 
 	return;
 
