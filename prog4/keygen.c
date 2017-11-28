@@ -11,7 +11,7 @@
 main(int argc, char *argv[])
 {
 	int keyLength;
-	char key[1024] = {0};
+	char key[10533]; memset(key, '\0', sizeof(key));
 	srand(time(NULL));
 	
 	/* Generate key. */
