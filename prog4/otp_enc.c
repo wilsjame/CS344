@@ -13,6 +13,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h> 
+#include <sys/ioctl.h>
 
 void error(const char *msg) { perror(msg); exit(0); } // Error function used for reporting issues
 void errorCheck(char* plaintextFileName, char* keyFileName, char* plaintext, char* key);
@@ -41,6 +42,10 @@ void errorCheck(char* plaintextFileName, char* keyFileName, char* plaintext, cha
  *
  */
 
+//TODO
+// Check if the port given cannot be found
+// Check if connecting to otp_dec_d (port?) not allowed!
+
 int main(int argc, char *argv[])
 {
 	int socketFD, portNumber, charsWritten, charsRead;
@@ -54,7 +59,10 @@ int main(int argc, char *argv[])
 	/* Usage. */
     	if (argc < 4) { fprintf(stderr,"USAGE: %s plaintext key port\n", argv[0]); exit(0); } // Check usage & args
 
-	// Set up the server address struct
+	/* Error checking and store command line arguments in local variables. */
+	errorCheck(argv[1], argv[2], plaintext, key);
+
+	/* Set up the server address struct. */
 	memset((char*)&serverAddress, '\0', sizeof(serverAddress)); // Clear out the address struct
 	portNumber = atoi(argv[3]); // Get the port number, convert to an integer from a string
 	serverAddress.sin_family = AF_INET; // Create a network-capable socket
@@ -63,23 +71,31 @@ int main(int argc, char *argv[])
 	if (serverHostInfo == NULL) { fprintf(stderr, "CLIENT: ERROR, no such host\n"); exit(0); }
 	memcpy((char*)&serverAddress.sin_addr.s_addr, (char*)serverHostInfo->h_addr, serverHostInfo->h_length); // Copy in the address
 
-	// Set up the socket
+	/* Set up the socket. Endpoint of communication with server. */
 	socketFD = socket(AF_INET, SOCK_STREAM, 0); // Create the socket
 	if (socketFD < 0) error("CLIENT: ERROR opening socket");
 
-	/* Error checking. */
-	errorCheck(argv[1], argv[2], plaintext, key);
-
-	// Check if the port given cannot be found
-	// Check if connecting to otp_dec_d (port?) not allowed!
-	
+	/* Connect socket to the server. */
 	if (connect(socketFD, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) < 0) // Connect socket to address
 		error("CLIENT: ERROR connecting");
 
-	// Send message to server
+	/* Send message to server. */
+	// single message shall contain encodingClient$$plaintext@@key@@@
 	charsWritten = send(socketFD, buffer, strlen(buffer), 0); // Write to the server
 	if (charsWritten < 0) error("CLIENT: ERROR writing to socket");
 	if (charsWritten < strlen(buffer)) printf("CLIENT: WARNING: Not all data written to socket!\n");
+
+	/* Verify send by waiting until send buffer is clear. */
+	int checkSend = -5; // Bytes remaining in send buffer
+	do
+	{
+		ioctl(socketFD, TIOCOUTQ, &checkSend); // Check the send buffer for this socket
+		//printf("checkSend: %d\n", checkSend); // Curiousity, check how many remaining bytes
+	}
+	while(checkSend > 0);
+
+	if(checkSend < 0) // Check if loop stopped because of an error
+		error("ioctl error");
 
 	// Get return message from server
 	memset(buffer, '\0', sizeof(buffer)); // Clear out the buffer again for reuse
