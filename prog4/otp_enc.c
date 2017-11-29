@@ -15,8 +15,7 @@
 #include <netdb.h> 
 
 void error(const char *msg) { perror(msg); exit(0); } // Error function used for reporting issues
-
-void errorChecking(char* plaintextFileName, char* keyFileName, char* plaintext);
+void errorCheck(char* plaintextFileName, char* keyFileName, char* plaintext, char* key);
 
 /*	USAGE
  * ./otp_enc plaintext key port
@@ -53,7 +52,6 @@ int main(int argc, char *argv[])
 	char plaintext[10533]; memset(plaintext, '\0', sizeof(plaintext));
 
 	/* Usage. */
-	// ./otp_enc plaintext key port
     	if (argc < 4) { fprintf(stderr,"USAGE: %s plaintext key port\n", argv[0]); exit(0); } // Check usage & args
 
 	// Set up the server address struct
@@ -70,23 +68,13 @@ int main(int argc, char *argv[])
 	if (socketFD < 0) error("CLIENT: ERROR opening socket");
 
 	/* Error checking. */
-	// Check key file for bad characters
-	// Check plaintext file for bad characters
-	// Check if key is shorter than plaintext
-	errorChecking(argv[1], argv[2], plaintext);
+	errorCheck(argv[1], argv[2], plaintext, key);
 
 	// Check if the port given cannot be found
 	// Check if connecting to otp_dec_d (port?) not allowed!
 	
-	/*
 	if (connect(socketFD, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) < 0) // Connect socket to address
 		error("CLIENT: ERROR connecting");
-
-	// Get input message from user
-	printf("CLIENT: Enter text to send to the server, and then hit enter: ");
-	memset(buffer, '\0', sizeof(buffer)); // Clear out the buffer array
-	fgets(buffer, sizeof(buffer) - 1, stdin); // Get input from the user, trunc to buffer - 1 chars, leaving \0
-	buffer[strcspn(buffer, "\n")] = '\0'; // Remove the trailing \n that fgets adds
 
 	// Send message to server
 	charsWritten = send(socketFD, buffer, strlen(buffer), 0); // Write to the server
@@ -100,12 +88,11 @@ int main(int argc, char *argv[])
 	printf("CLIENT: I received this from the server: \"%s\"\n", buffer);
 
 	close(socketFD); // Close the socket
-	*/
 
 	return 0;
 }
 
-void errorChecking(char* plaintextFileName, char* keyFileName, char* plaintext)
+void errorCheck(char* plaintextFileName, char* keyFileName, char* plaintext, char* key)
 {
 	FILE* plaintextFile = fopen(plaintextFileName, "r");
 	FILE* keyFile = fopen(keyFileName, "r");
@@ -131,7 +118,7 @@ void errorChecking(char* plaintextFileName, char* keyFileName, char* plaintext)
 		fprintf(stderr, "CLIENT: ERROR, key size too small\n"); exit(1); 
 	}
 
-	/* Check plaintext file for bad characters. */
+	/* Check plaintext file for bad characters and store file contents. */
 	while((c = fgetc(plaintextFile)) != EOF)
 	{
 		(char)c;
@@ -151,6 +138,15 @@ void errorChecking(char* plaintextFileName, char* keyFileName, char* plaintext)
 	}
 
 	plaintext[n] = '\0';
+	n = 0;
+
+	/* Store key file contents. */
+	while((c = fgetc(keyFile)) != EOF)
+	{
+		key[n++] = (char)c; 
+	}
+
+	key[n] = '\0';
 
 	return;
 
