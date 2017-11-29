@@ -17,6 +17,8 @@
 
 void error(const char *msg) { perror(msg); exit(0); } // Error function used for reporting issues
 void errorCheck(char* plaintextFileName, char* keyFileName, char* plaintext, char* key);
+void buildPayload(char* payload, char* plaintext, char* key);
+
 
 /*	USAGE
  * ./otp_enc plaintext key port
@@ -55,6 +57,7 @@ int main(int argc, char *argv[])
 
 	char key[10533]; memset(key, '\0', sizeof(key));
 	char plaintext[10533]; memset(plaintext, '\0', sizeof(plaintext));
+	char payload[30000]; memset(payload, '\0', sizeof(payload));
 
 	/* Usage. */
     	if (argc < 4) { fprintf(stderr,"USAGE: %s plaintext key port\n", argv[0]); exit(0); } // Check usage & args
@@ -79,11 +82,13 @@ int main(int argc, char *argv[])
 	if (connect(socketFD, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) < 0) // Connect socket to address
 		error("CLIENT: ERROR connecting");
 
+	/* Build message to send to server. Shall contain (e)ncodingClient@@PLAIN TEXT%%KEY TEXT** */
+	buildPayload(payload, plaintext, key);
+
 	/* Send message to server. */
-	// single message shall contain encodingClient$$plaintext@@key@@@
-	charsWritten = send(socketFD, buffer, strlen(buffer), 0); // Write to the server
+	charsWritten = send(socketFD, payload, strlen(payload), 0); // Write to the server
 	if (charsWritten < 0) error("CLIENT: ERROR writing to socket");
-	if (charsWritten < strlen(buffer)) printf("CLIENT: WARNING: Not all data written to socket!\n");
+	if (charsWritten < strlen(payload)) printf("CLIENT: WARNING: Not all data written to socket!\n");
 
 	/* Verify send by waiting until send buffer is clear. */
 	int checkSend = -5; // Bytes remaining in send buffer
@@ -96,6 +101,8 @@ int main(int argc, char *argv[])
 
 	if(checkSend < 0) // Check if loop stopped because of an error
 		error("ioctl error");
+	else
+		printf("Send verified!\n");
 
 	// Get return message from server
 	memset(buffer, '\0', sizeof(buffer)); // Clear out the buffer again for reuse
@@ -108,6 +115,9 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
+/* Check the following for the command line arguments:
+ * 	Plaintext file has no bad characters.
+ * 	Key file is atleast as long as the plaintext file. */
 void errorCheck(char* plaintextFileName, char* keyFileName, char* plaintext, char* key)
 {
 	FILE* plaintextFile = fopen(plaintextFileName, "r");
@@ -163,6 +173,23 @@ void errorCheck(char* plaintextFileName, char* keyFileName, char* plaintext, cha
 	}
 
 	key[n] = '\0';
+
+	return;
+
+}
+
+/* Build the single message to be sent to the server.
+ * The following will be seperated by special characters:
+ * flag character to signify the sender (this program),
+ * plaintext, and key. e@@PLAIN TEXT%%KEY TEXT** */
+void buildPayload(char* payload, char* plaintext, char* key)
+{
+	strcpy(payload, "e");
+	strcat(payload, "@@");
+	strcat(payload, plaintext);
+	strcat(payload, "%%");
+	strcat(payload, key);
+	strcat(payload, "**");
 
 	return;
 
