@@ -1,0 +1,6 @@
+#!/bin/bash
+
+echo "Compiling *comp* *comp*"
+
+gcc -o otp_enc otp_enc.c
+gcc -o otp_enc_d otp_enc_d.c
