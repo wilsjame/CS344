@@ -16,7 +16,7 @@
 
 void error(const char *msg) { perror(msg); exit(0); } // Error function used for reporting issues
 
-void errorChecking(char* plaintextFileName, char* keyFileName);
+void errorChecking(char* plaintextFileName, char* keyFileName, char* plaintext);
 
 /*	USAGE
  * ./otp_enc plaintext key port
@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
 	// Check key file for bad characters
 	// Check plaintext file for bad characters
 	// Check if key is shorter than plaintext
-	errorChecking(argv[1], argv[2]);
+	errorChecking(argv[1], argv[2], plaintext);
 
 	// Check if the port given cannot be found
 	// Check if connecting to otp_dec_d (port?) not allowed!
@@ -105,17 +105,15 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
-void errorChecking(char* plaintextFileName, char* keyFileName)
+void errorChecking(char* plaintextFileName, char* keyFileName, char* plaintext)
 {
 	FILE* plaintextFile = fopen(plaintextFileName, "r");
 	FILE* keyFile = fopen(keyFileName, "r");
 	long plaintextSize;
 	long keySize;
-
-	if(plaintextFile == NULL || keyFile == NULL)
-	{
-		printf("Error opening plaintext or key!\n");
-	}
+	size_t i, n = 0;
+	int c;
+	char* badCharacters = "$*!(#*djs8301these-are-all-bad-characters@@@"; // '@' placeholder
 
 	/* Get length of plaintext. */
 	fseek(plaintextFile, 0, SEEK_END);
@@ -127,10 +125,32 @@ void errorChecking(char* plaintextFileName, char* keyFileName)
 	keySize = ftell(keyFile);
 	fseek(keyFile, 0, SEEK_SET);
 
-	/* Compare lengths. */
-	//testing
-	printf("plaintext length is: %d\n", plaintextSize);
-	printf("key length is: %d\n", keySize);
+	/* Compare lengths, key must be atleast as long as plaintext. */
+	if(keySize < plaintextSize)
+	{
+		fprintf(stderr, "CLIENT: ERROR, key size too small\n"); exit(1); 
+	}
+
+	/* Check plaintext file for bad characters. */
+	while((c = fgetc(plaintextFile)) != EOF)
+	{
+		(char)c;
+		i = 0; 
+
+		while(badCharacters[i++] != '@')
+		{
+
+			if(c == badCharacters[i])
+			{
+				fprintf(stderr, "CLIENT: ERROR, bad plaintext character\n"); exit(1); 
+			}
+
+		}
+
+		plaintext[n++] = c; 
+	}
+
+	plaintext[n] = '\0';
 
 	return;
 
