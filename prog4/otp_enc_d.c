@@ -46,14 +46,19 @@ void extractPayload(char* payload, char* plaintext, char* key);
 
 int main(int argc, char *argv[])
 {
+	/* These are from Brewster. */
 	int listenSocketFD, establishedConnectionFD, portNumber, charsRead;
 	socklen_t sizeOfClientInfo;
 	char buffer[256];
 	struct sockaddr_in serverAddress, clientAddress;
 
+	/* These aren't. */
 	char key[100000]; memset(key, '\0', sizeof(key));
 	char plaintext[100000]; memset(plaintext, '\0', sizeof(plaintext));
 	char payload[300000]; memset(payload, '\0', sizeof(payload));
+	int trackerSize = 0;
+	pid_t trackingArray[250]; memset(trackingArray, '\0', sizeof(trackingArray));
+	pid_t spawnPid;
 
 	/* Usage. */
 	if (argc < 2) { fprintf(stderr,"USAGE: %s port\n", argv[0]); exit(1); } // Check usage & args
@@ -80,25 +85,47 @@ int main(int argc, char *argv[])
 	while(1)
 	{
 
-		/* Accept a connection, blocking if one is not available until one connects. */
+		/* Accept a connection, blocking if one is not available until one connects. 
+		 * accept() generates a new socket to be used for actual communication,
+		 * create a seperate process with fork() and use this socket to complete the transaction. */
 		sizeOfClientInfo = sizeof(clientAddress); // Get the size of the address for the client that will connect
-		establishedConnectionFD = accept(listenSocketFD, (struct sockaddr *)&clientAddress, &sizeOfClientInfo); // Accept
+		establishedConnectionFD = accept(listenSocketFD, (struct sockaddr *)&clientAddress, &sizeOfClientInfo); // Accept :D
 		if (establishedConnectionFD < 0) error("ERROR on accept");
 		printf("SERVER: Connected Client at port %d\n", ntohs(clientAddress.sin_port));
 
-		/* Get the message from the client, verify it's from otp_enc, and extract the payload, */
-		memset(payload, '\0', sizeof(payload));
-		charsRead = recv(establishedConnectionFD, payload, sizeof(payload) - 1, 0); // Read the client's message from the socket
-		if (charsRead < 0) error("ERROR reading from socket");
-		printf("SERVER: I received this from the client: \"%s\"\n", payload);
+		/* Fork off child to complete the encoding transaction. */
+		spawnPid = fork();
 
-		extractPayload(payload, plaintext, key);
+		switch(spawnPid)
+		{
+			case -1:
+				perror("SERVER: fork() failure! \n");
+				exit(1);
+				break;
+			case 0:		/* In child. */
 
-		// Send a Success message back to the client
-		charsRead = send(establishedConnectionFD, "I am the server, and I got your message", 39, 0); // Send success back
-		if (charsRead < 0) error("ERROR writing to socket");
-		close(establishedConnectionFD); // Close the existing socket which is connected to the client
+				/* Read client's message from the socket, 
+				 * verify it's from otp_enc, and extract the payload, */ 
+				memset(payload, '\0', sizeof(payload));
+				charsRead = recv(establishedConnectionFD, payload, sizeof(payload) - 1, 0); 
+				if (charsRead < 0) error("ERROR reading from socket");
+				printf("SERVER: I received this from the client: \"%s\"\n", payload);
 
+				extractPayload(payload, plaintext, key);
+
+				/* Send a Success message back to the client. */
+				charsRead = send(establishedConnectionFD, "I am the server, and I got your message", 39, 0); 
+				if (charsRead < 0) error("ERROR writing to socket");
+
+				/* Close the existing socket which is connected to the client. */
+				close(establishedConnectionFD); 
+
+				break;
+			default:	/* In parent. */
+				//do more stuff?
+				break;
+		} //end switch
+			
 	}
 
 	close(listenSocketFD); // Close the listening socket
@@ -106,6 +133,7 @@ int main(int argc, char *argv[])
 	return 0; 
 
 }
+
 /* Parse and extract the payload contents into their respective variables. 
  * Format: e$PLAIN TEXT*KEY TEXT! */
 void extractPayload(char* payload, char* plaintext, char* key)
