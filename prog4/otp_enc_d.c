@@ -14,6 +14,7 @@
 #include <netinet/in.h>
 
 void error(const char *msg) { perror(msg); exit(1); } // Error function used for reporting issues
+void extractPayload(char* payload, char* plaintext, char* key);
 
 /*	USAGE 
  * ./server listeningPort &
@@ -50,6 +51,10 @@ int main(int argc, char *argv[])
 	char buffer[256];
 	struct sockaddr_in serverAddress, clientAddress;
 
+	char key[100000]; memset(key, '\0', sizeof(key));
+	char plaintext[100000]; memset(plaintext, '\0', sizeof(plaintext));
+	char payload[300000]; memset(payload, '\0', sizeof(payload));
+
 	/* Usage. */
 	if (argc < 2) { fprintf(stderr,"USAGE: %s port\n", argv[0]); exit(1); } // Check usage & args
 
@@ -71,21 +76,23 @@ int main(int argc, char *argv[])
 	/* Begin queueing connection requests until limit is reached. */
 	listen(listenSocketFD, 5); // Flip the socket on - it can now receive up to 5 connections
 
-	/* Loop and accept clients indefinetly. */
+	/* Loop and accept clients indefinitely. */
 	while(1)
 	{
 
-		// Accept a connection, blocking if one is not available until one connects
+		/* Accept a connection, blocking if one is not available until one connects. */
 		sizeOfClientInfo = sizeof(clientAddress); // Get the size of the address for the client that will connect
 		establishedConnectionFD = accept(listenSocketFD, (struct sockaddr *)&clientAddress, &sizeOfClientInfo); // Accept
 		if (establishedConnectionFD < 0) error("ERROR on accept");
 		printf("SERVER: Connected Client at port %d\n", ntohs(clientAddress.sin_port));
 
-		// Get the message from the client and display it
-		memset(buffer, '\0', 256);
-		charsRead = recv(establishedConnectionFD, buffer, 255, 0); // Read the client's message from the socket
+		/* Get the message from the client, verify it's from otp_enc, and extract the payload, */
+		memset(payload, '\0', sizeof(payload));
+		charsRead = recv(establishedConnectionFD, payload, sizeof(payload) - 1, 0); // Read the client's message from the socket
 		if (charsRead < 0) error("ERROR reading from socket");
-		printf("SERVER: I received this from the client: \"%s\"\n", buffer);
+		printf("SERVER: I received this from the client: \"%s\"\n", payload);
+
+		extractPayload(payload, plaintext, key);
 
 		// Send a Success message back to the client
 		charsRead = send(establishedConnectionFD, "I am the server, and I got your message", 39, 0); // Send success back
@@ -98,5 +105,33 @@ int main(int argc, char *argv[])
 
 	return 0; 
 
+}
+/* Parse and extract the payload contents into their respective variables. 
+ * Format: e$PLAIN TEXT*KEY TEXT! */
+void extractPayload(char* payload, char* plaintext, char* key)
+{
+
+	/* Verify the client/sender. */
+	char* verifySenderFlag = strtok(payload, "$");	
+	
+	if(strcmp(verifySenderFlag, "e") != 0) 
+	{
+		fprintf(stderr, "SERVER: ERROR, unverified sender!\n"); 
+		
+		return;
+
+	}
+
+	/* extract payload contents. */
+	strcpy(plaintext, strtok(NULL, "*"));
+	strcpy(key, strtok(NULL, "!"));
+
+	// test
+	/*
+	printf("plaintext is: %s\n", plaintext);
+	printf("key is: %s\n", key);
+	*/
+
+	return;
 }
 
