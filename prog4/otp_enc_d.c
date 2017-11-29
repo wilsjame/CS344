@@ -56,8 +56,8 @@ int main(int argc, char *argv[])
 	char key[100000]; memset(key, '\0', sizeof(key));
 	char plaintext[100000]; memset(plaintext, '\0', sizeof(plaintext));
 	char payload[300000]; memset(payload, '\0', sizeof(payload));
+	int childExitMethod;
 	int trackerSize = 0;
-	pid_t trackingArray[250]; memset(trackingArray, '\0', sizeof(trackingArray));
 	pid_t spawnPid;
 
 	/* Usage. */
@@ -104,29 +104,42 @@ int main(int argc, char *argv[])
 				break;
 			case 0:		/* In child. */
 
-				/* Read client's message from the socket, 
-				 * verify it's from otp_enc, and extract the payload, */ 
+				/* Read client's message from the socket. */ 
+				/* verify it's from otp_enc, and extract the payload, */ 
 				memset(payload, '\0', sizeof(payload));
 				charsRead = recv(establishedConnectionFD, payload, sizeof(payload) - 1, 0); 
 				if (charsRead < 0) error("ERROR reading from socket");
 				printf("SERVER: I received this from the client: \"%s\"\n", payload);
 
+				/* Verify it's from otp_enc, and extract the payload, */ 
 				extractPayload(payload, plaintext, key);
+				//TODO encode the thing
 
-				/* Send a Success message back to the client. */
+				/* Send return message back to the client. */
 				charsRead = send(establishedConnectionFD, "I am the server, and I got your message", 39, 0); 
 				if (charsRead < 0) error("ERROR writing to socket");
 
 				/* Close the existing socket which is connected to the client. */
 				close(establishedConnectionFD); 
 
+				/* Increment child counter and exit. */
+				trackerSize++;
+
+				return;
+
 				break;
 			default:	/* In parent. */
-				//do more stuff?
 				break;
-		} //end switch
+		} // End fork switch
+
+		/* Check number of conncurrent (child) sockets running is less than 5, 
+		 * and reap an orphan if needed. */
+		if(trackerSize >= 5)
+		{
+			waitpid(-1, &childExitMethod, WNOHANG); // -1 -> wait for any child
+		}
 			
-	}
+	} // End server while loop
 
 	close(listenSocketFD); // Close the listening socket
 
