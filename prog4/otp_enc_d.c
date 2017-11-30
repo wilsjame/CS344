@@ -123,20 +123,29 @@ int main(int argc, char *argv[])
 				close(establishedConnectionFD); 
 
 				/* Increment child counter and exit. */
-				trackerSize++;
+				//TODO implement some form of IPC, pipes?
+				//trackerSize++;
 
-				return;
+				exit(0);
 
 				break;
 			default:	/* In parent. */
+
+				/* Increment child counter and exit. */
+				trackerSize++;
+
 				break;
 		} // End fork switch
 
 		/* Check number of conncurrent (child) sockets running is less than 5, 
 		 * and reap an orphan if needed. */
-		if(trackerSize >= 5)
+		printf("child tracker size is: %d\n", trackerSize);
+		if(trackerSize > 5)
 		{
+			printf("trace 1\n");
 			waitpid(-1, &childExitMethod, WNOHANG); // -1 -> wait for any child
+			trackerSize--;
+			printf("trace 2: tracker size is now: %d\n", trackerSize);
 		}
 			
 	} // End server while loop
