@@ -26,13 +26,13 @@ main()
 	{
 		
 		/* Convert characters to literal alphabet indexes A = 0, B = 1, ..., ' ' = 26 */
-		if(plain[i] == ' ')
+		if(plaintext[i] == ' ')
 		{
 			plainVal = 26;
 		}
 		else
 		{
-			plainVal = plain[i] - 65; // A = 65, B = 66, ...
+			plainVal = plaintext[i] - 65; // A = 65, B = 66, ...
 		}
 
 		if(key[i] == ' ')
@@ -47,20 +47,30 @@ main()
 		/* B AVTCJCLSJPALYBZ : key
 		 * IN THE BEGINNING  : message
 		 *
-		 * (1)B : key
-		 * (8)I : message
+		 * (66)B 	     : key
+		 * (73)I 	     : message
 		 *
-		 * (1+8) = (9) : key + message
+		 * (66+73) = (139)   : key + message
 		 *
-		 * (9) mod 27  : if key + message > 27 keep subtracting 27 until false
+		 * (139)             : if key + message > 27 subtract 27 until false
+		 * (4)		     : result
 		 *
-		 * (9)J : ciphertext :D */
+		 * (4) % 27          : take remainder of dividing result by 27
+		 * (4)J              : ciphertext :D */
 
-		encodedChar = plainVal + keyVal; /* 
+		encodedChar = plainVal + keyVal;  
 
-		while(encryptedChar > 27)
+		while(encodedChar > 27)
 		{
-			
+			encodedChar -= 27;
+		}
+
+		encodedChar %= 27; // Redundant?
+		encodedtext[i] = chars[encodedChar];
+	}
+
+	printf("encoded   : %s\n", encodedtext);
 
 	return;
+
 }
