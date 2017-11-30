@@ -2,5 +2,9 @@
 
 echo "Compiling *comp* *comp*"
 
+gcc -o keygen keygen.c
 gcc -o otp_enc otp_enc.c
 gcc -o otp_enc_d otp_enc_d.c
+
+# test prog
+gcc -o encode encode.c
