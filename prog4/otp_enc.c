@@ -46,7 +46,6 @@ void buildPayload(char* payload, char* plaintext, char* key);
 
 //TODO
 // Check if the port given cannot be found
-// Check if connecting to otp_dec_d (port?) not allowed!
 
 int main(int argc, char *argv[])
 {
@@ -55,9 +54,9 @@ int main(int argc, char *argv[])
 	struct hostent* serverHostInfo;
 	char buffer[256];
 
-	char key[10533]; memset(key, '\0', sizeof(key));
-	char plaintext[10533]; memset(plaintext, '\0', sizeof(plaintext));
-	char payload[30000]; memset(payload, '\0', sizeof(payload));
+	char key[100000]; memset(key, '\0', sizeof(key));
+	char plaintext[100000]; memset(plaintext, '\0', sizeof(plaintext));
+	char payload[300000]; memset(payload, '\0', sizeof(payload));
 
 	/* Usage. */
     	if (argc < 4) { fprintf(stderr,"USAGE: %s plaintext key port\n", argv[0]); exit(0); } // Check usage & args
@@ -82,10 +81,11 @@ int main(int argc, char *argv[])
 	if (connect(socketFD, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) < 0) // Connect socket to address
 		error("CLIENT: ERROR connecting");
 
-	/* Build message to send to server. Shall contain (e)ncodingClient@@PLAIN TEXT%%KEY TEXT** */
+	/* Build message to send to server. Format: e$PLAIN TEXT*KEY TEXT! */
 	buildPayload(payload, plaintext, key);
 
 	/* Send message to server. */
+	//TODO verify all bytes are sent, loop
 	charsWritten = send(socketFD, payload, strlen(payload), 0); // Write to the server
 	if (charsWritten < 0) error("CLIENT: ERROR writing to socket");
 	if (charsWritten < strlen(payload)) printf("CLIENT: WARNING: Not all data written to socket!\n");
@@ -181,15 +181,15 @@ void errorCheck(char* plaintextFileName, char* keyFileName, char* plaintext, cha
 /* Build the single message to be sent to the server.
  * The following will be seperated by special characters:
  * flag character to signify the sender (this program),
- * plaintext, and key. e@@PLAIN TEXT%%KEY TEXT** */
+ * plaintext, and key. e$PLAIN TEXT*KEY TEXT! */
 void buildPayload(char* payload, char* plaintext, char* key)
 {
 	strcpy(payload, "e");
-	strcat(payload, "@@");
+	strcat(payload, "$");
 	strcat(payload, plaintext);
-	strcat(payload, "%%");
+	strcat(payload, "*");
 	strcat(payload, key);
-	strcat(payload, "**");
+	strcat(payload, "!");
 
 	return;
 
