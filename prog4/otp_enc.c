@@ -99,7 +99,7 @@ int main(int argc, char *argv[])
 	//	add return byte to begin and end index
 	while(charsWrittenTotal < payloadSize)
 	{
-		printf("%d", traceCounter++);
+		//printf("%d", traceCounter++);
 
 		/* Copy packet into buffer and send. */
 		memset(buffer, '\0', sizeof(buffer));
@@ -122,7 +122,7 @@ int main(int argc, char *argv[])
 		if(checkSend < 0) // Check if loop stopped because of an error
 			error("CLIENT enc: ioctl error");
 		else
-			printf("CLIENT enc: Send verified!\n");
+			//printf("CLIENT enc: Send verified!\n");
 
 		/* Hull breach! */
 		if (charsWritten < 0) error("CLIENT enc: ERROR writing to socket");
@@ -178,12 +178,34 @@ int main(int argc, char *argv[])
 		printf("CLIENT enc: Send verified!\n");
 	*/
 
-	// Get return message from server
-	// TODO verify all bytes received, loop
+	/* Clear stale payload. */
+	memset(payload, '\0', sizeof(payload));
+
+	/* Get return message from server. */
+	while(strstr(payload, "!") == NULL)
+	{
+		//printf("trace\n");
+		memset(buffer, '\0', sizeof(buffer));
+		charsRead = recv(socketFD, buffer, sizeof(buffer) - 1, 0); 
+		strcat(payload, buffer); // Append packet to payload
+		if (charsRead < 0) error("CLIENT enc: ERROR reading from socket");
+
+		//printf("CLIENT receiving payload: %s\n", payload);
+	}
+	
+	int terminalLocation = strstr(payload, "!") - payload;
+	payload[terminalLocation] = '\0';
+
+	printf("CLIENT enc: I received this from the server: \"%s\"\n", payload);
+	
+
+
+	/*
 	memset(buffer, '\0', sizeof(buffer)); // Clear out the buffer again for reuse
 	charsRead = recv(socketFD, buffer, sizeof(buffer) - 1, 0); // Read data from the socket, leaving \0 at end
 	if (charsRead < 0) error("CLIENT enc: ERROR reading from socket");
 	printf("CLIENT enc: I received this from the server: \"%s\"\n", buffer);
+	*/
 
 	close(socketFD); // Close the socket
 

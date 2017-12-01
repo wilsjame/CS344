@@ -108,15 +108,13 @@ int main(int argc, char *argv[])
 			case 0:		/* In child. */
 
 				/* Read client's message from the socket. */ 
-				/* verify it's from otp_enc, and extract the payload, */ 
-
+				/* verify it's from otp_enc, and extract the payload in packets. */ 
 				while(strstr(payload, "!") == NULL)
 				{
 					memset(buffer, '\0', sizeof(buffer));
 					charsRead = recv(establishedConnectionFD, buffer, sizeof(buffer) - 1, 0); 
 					strcat(payload, buffer); // Append packet to payload
 					if (charsRead < 0) error("SERVER enc: ERROR reading from socket");
-					printf("SERVER enc: I received this from the client: \"%s\"\n", payload);
 				}
 				
 				int terminalLocation = strstr(payload, "!") - payload;
@@ -126,14 +124,89 @@ int main(int argc, char *argv[])
 				extractPayload(payload, plaintext, key);
 				encode(plaintext, key, encodedtext);
 
+				/* Add flag at end of encoded text for client, 
+				 * and wipe stale payload. */
+				strcat(encodedtext, "!");
+				memset(payload, '\0', sizeof(payload));
+
 				/* Send return message back to the client. */
-				//charsRead = send(establishedConnectionFD, "I am the server, and I got your message", 39, 0); 
-				//if (charsRead < 0) error("ERROR writing to socket");
+				int payloadSize = strlen(encodedtext);
+				int beginIndex = 0, endIndex = 250;
+				int charsWritten, charsWrittenTotal = 0;
+				int traceCounter = 0;
+
+				//send characters to reach payload size
+				//	copy chunk into buffer
+				//	send and get return bytes
+				//	add return byte to begin and end index
+				while(charsWrittenTotal < payloadSize)
+				{
+					//printf("%d", traceCounter++);
+
+					/* Copy packet into buffer and send. */
+					memset(buffer, '\0', sizeof(buffer));
+					strncpy(buffer, encodedtext + beginIndex, endIndex - beginIndex);
+					charsWritten = send(establishedConnectionFD, buffer, strlen(buffer), 0); // Write to the server
+					charsWrittenTotal += charsWritten;
+
+					/* Hull breach! */
+					if (charsWritten < 0) error("SERVER enc: ERROR writing to socket");
+
+					/* Verify send by waiting until send buffer is clear. */
+					int checkSend = -5; // Bytes remaining in send buffer
+					do
+					{
+						ioctl(establishedConnectionFD, TIOCOUTQ, &checkSend); // Check the send buffer for this socket
+						//printf("checkSend: %d\n", checkSend); // Curiousity, check how many remaining bytes
+					}
+					while(checkSend > 0);
+
+					if(checkSend < 0) // Check if loop stopped because of an error
+						error("SERVER enc: ioctl error");
+					else
+						//printf("SERVER enc: Send verified!\n");
+
+					/* Hull breach! */
+					if (charsWritten < 0) error("SERVER enc: ERROR writing to socket");
+
+					/* Increment payload packet section. */
+					if (charsWritten < strlen(buffer)) 
+					{
+						printf("SERVER enc: WARNING: Not all data written to socket!\n");
+						beginIndex += charsWritten;
+						endIndex += charsWritten;
+					}
+					else
+					{
+						beginIndex += 250;
+						endIndex += 250;
+
+						/* Make sure payload endIndex dosen't step out of bounds. */
+						/*
+						while(endIndex > payloadSize)
+						{
+
+							printf("beginIndex: %d endIndex %d\n", beginIndex, endIndex);
+							--beginIndex;
+							--endIndex;
+						}
+						*/
+
+					}
+
+				}
+
+				printf("TRACE: done sending in server\n");
+
+				/* Send return message back to the client. */
+	/*
 				charsRead = send(establishedConnectionFD, encodedtext, strlen(encodedtext), 0); // Write to the client
 				if (charsRead < 0) error("SERVER enc: ERROR writing to socket");
 				if (charsRead < strlen(encodedtext)) printf("SERVER enc: WARNING: Not all data written to socket!\n");
+				*/
 
 				/* Verify send by waiting until send buffer is clear. */
+				/*
 				int checkSend = -5; // Bytes remaining in send buffer
 				do
 				{
@@ -146,6 +219,8 @@ int main(int argc, char *argv[])
 					error("SERVER enc: ioctl error");
 				else
 					printf("SERVER enc: Send verified!\n");
+
+				*/
 
 				/* Close the existing socket which is connected to the client. */
 				close(establishedConnectionFD); 
@@ -167,13 +242,10 @@ int main(int argc, char *argv[])
 
 		/* Check number of conncurrent (child) sockets running is less than 5, 
 		 * and reap an orphan if needed. */
-		//printf("child tracker size is: %d\n", trackerSize);
 		if(trackerSize > 5)
 		{
-			//printf("trace 1\n");
 			waitpid(-1, &childExitMethod, WNOHANG); // -1 -> wait for any child
 			trackerSize--;
-			//printf("trace 2: tracker size is now: %d\n", trackerSize);
 		}
 			
 	} // End server while loop
@@ -204,7 +276,6 @@ void extractPayload(char* payload, char* plaintext, char* key)
 	strcpy(plaintext, strtok(NULL, "*"));
 	strcpy(key, strtok(NULL, "!"));
 
-	// test
 	/*
 	printf("plaintext is: %s\n", plaintext);
 	printf("key is: %s\n", key);
@@ -221,10 +292,12 @@ void encode(char* plaintext, char* key, char* encodedtext)
 	int plainVal, keyVal;
 	char chars[28] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ ";
 
+	
 	printf("\n--- In encode() server side ---\n");
 	printf("key       : %s\n", key);
 	printf("plaintext : %s\n", plaintext);
 	printf("------------------------------\n");
+	
 
 	/* Encoding. */
 	for(i = 0; i < (int)strlen(plaintext); i++)
@@ -274,8 +347,10 @@ void encode(char* plaintext, char* key, char* encodedtext)
 		encodedtext[i] = chars[encodedChar];
 	}
 
+	
 	printf("encoded   : %s\n", encodedtext);
 	printf("------------------------------\n");
+	
 
 	return;
 
