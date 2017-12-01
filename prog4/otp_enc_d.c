@@ -12,6 +12,7 @@
 #include <sys/types.h> 
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <sys/ioctl.h>
 
 void error(const char *msg) { perror(msg); exit(1); } // Error function used for reporting issues
 void extractPayload(char* payload, char* plaintext, char* key);
@@ -74,11 +75,11 @@ int main(int argc, char *argv[])
 
 	/* Set up the socket. Listening endpoint of communcation with client. */
 	listenSocketFD = socket(AF_INET, SOCK_STREAM, 0); // Create the socket
-	if (listenSocketFD < 0) error("ERROR opening socket");
+	if (listenSocketFD < 0) error("SERVER enc: ERROR opening socket");
 
 	/* Bind socket to port # to enable the socket to begin listening for clients. */
 	if (bind(listenSocketFD, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) < 0) // Connect socket to port
-		error("ERROR on binding");
+		error("SERVER enc: ERROR on binding");
 
 	/* Begin queueing connection requests until limit is reached. */
 	listen(listenSocketFD, 5); // Flip the socket on - it can now receive up to 5 connections
@@ -92,8 +93,8 @@ int main(int argc, char *argv[])
 		 * create a seperate process with fork() and use this socket to complete the transaction. */
 		sizeOfClientInfo = sizeof(clientAddress); // Get the size of the address for the client that will connect
 		establishedConnectionFD = accept(listenSocketFD, (struct sockaddr *)&clientAddress, &sizeOfClientInfo); // Accept :D
-		if (establishedConnectionFD < 0) error("ERROR on accept");
-		printf("SERVER: Connected Client at port %d\n", ntohs(clientAddress.sin_port));
+		if (establishedConnectionFD < 0) error("SERVER enc: ERROR on accept");
+		printf("SERVER enc: Connected Client at port %d\n", ntohs(clientAddress.sin_port));
 
 		/* Fork off child to complete the encoding transaction. */
 		spawnPid = fork();
@@ -101,7 +102,7 @@ int main(int argc, char *argv[])
 		switch(spawnPid)
 		{
 			case -1:
-				perror("SERVER: fork() failure! \n");
+				perror("SERVER enc: fork() failure! \n");
 				exit(1);
 				break;
 			case 0:		/* In child. */
@@ -110,16 +111,33 @@ int main(int argc, char *argv[])
 				/* verify it's from otp_enc, and extract the payload, */ 
 				memset(payload, '\0', sizeof(payload));
 				charsRead = recv(establishedConnectionFD, payload, sizeof(payload) - 1, 0); 
-				if (charsRead < 0) error("ERROR reading from socket");
-				printf("SERVER: I received this from the client: \"%s\"\n", payload);
+				if (charsRead < 0) error("SERVER enc: ERROR reading from socket");
+				printf("SERVER enc: I received this from the client: \"%s\"\n", payload);
 
 				/* Verify it's from otp_enc, and extract the payload, */ 
 				extractPayload(payload, plaintext, key);
 				encode(plaintext, key, encodedtext);
 
 				/* Send return message back to the client. */
-				charsRead = send(establishedConnectionFD, "I am the server, and I got your message", 39, 0); 
-				if (charsRead < 0) error("ERROR writing to socket");
+				//charsRead = send(establishedConnectionFD, "I am the server, and I got your message", 39, 0); 
+				//if (charsRead < 0) error("ERROR writing to socket");
+				charsRead = send(establishedConnectionFD, encodedtext, strlen(encodedtext), 0); // Write to the client
+				if (charsRead < 0) error("SERVER enc: ERROR writing to socket");
+				if (charsRead < strlen(encodedtext)) printf("SERVER enc: WARNING: Not all data written to socket!\n");
+
+				/* Verify send by waiting until send buffer is clear. */
+				int checkSend = -5; // Bytes remaining in send buffer
+				do
+				{
+					ioctl(establishedConnectionFD, TIOCOUTQ, &checkSend); // Check the send buffer for this socket
+					//printf("checkSend: %d\n", checkSend); // Curiousity, check how many remaining bytes
+				}
+				while(checkSend > 0);
+
+				if(checkSend < 0) // Check if loop stopped because of an error
+					error("SERVER enc: ioctl error");
+				else
+					printf("SERVER enc: Send verified!\n");
 
 				/* Close the existing socket which is connected to the client. */
 				close(establishedConnectionFD); 
@@ -141,13 +159,13 @@ int main(int argc, char *argv[])
 
 		/* Check number of conncurrent (child) sockets running is less than 5, 
 		 * and reap an orphan if needed. */
-		printf("child tracker size is: %d\n", trackerSize);
+		//printf("child tracker size is: %d\n", trackerSize);
 		if(trackerSize > 5)
 		{
-			printf("trace 1\n");
+			//printf("trace 1\n");
 			waitpid(-1, &childExitMethod, WNOHANG); // -1 -> wait for any child
 			trackerSize--;
-			printf("trace 2: tracker size is now: %d\n", trackerSize);
+			//printf("trace 2: tracker size is now: %d\n", trackerSize);
 		}
 			
 	} // End server while loop
@@ -168,7 +186,7 @@ void extractPayload(char* payload, char* plaintext, char* key)
 	
 	if(strcmp(verifySenderFlag, "e") != 0) 
 	{
-		fprintf(stderr, "SERVER: ERROR, unverified sender!\n"); 
+		fprintf(stderr, "SERVER enc: ERROR, unverified sender!\n"); 
 		
 		return;
 
@@ -195,6 +213,7 @@ void encode(char* plaintext, char* key, char* encodedtext)
 	int plainVal, keyVal;
 	char chars[28] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ ";
 
+	printf("\n--- In encode() server side ---\n");
 	printf("key       : %s\n", key);
 	printf("plaintext : %s\n", plaintext);
 	printf("------------------------------\n");
