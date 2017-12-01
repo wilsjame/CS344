@@ -52,7 +52,9 @@ int main(int argc, char *argv[])
 	int socketFD, portNumber, charsWritten, charsRead;
 	struct sockaddr_in serverAddress;
 	struct hostent* serverHostInfo;
-	char buffer[256];
+
+	char buffer[256]; memset(buffer, '\0', sizeof(buffer)); 
+	char completeMessage[300000]; memset(completeMessage, '\0', sizeof(completeMessage));
 
 	char key[100000]; memset(key, '\0', sizeof(key));
 	char plaintext[100000]; memset(plaintext, '\0', sizeof(plaintext));
@@ -86,11 +88,82 @@ int main(int argc, char *argv[])
 
 	/* Send message to server. */
 	//TODO verify all bytes are sent, loop
+	int payloadSize = strlen(payload);
+	int beginIndex = 0, endIndex = 250;
+	int charsWrittenTotal = 0;
+	int traceCounter = 0;
+
+	//send characters to reach payload size
+	//	copy chunk into buffer
+	//	send and get return bytes
+	//	add return byte to begin and end index
+	while(charsWrittenTotal < payloadSize)
+	{
+		printf("%d", traceCounter++);
+
+		/* Copy packet into buffer and send. */
+		memset(buffer, '\0', sizeof(buffer));
+		strncpy(buffer, payload + beginIndex, endIndex - beginIndex);
+		charsWritten = send(socketFD, buffer, strlen(buffer), 0); // Write to the server
+		charsWrittenTotal += charsWritten;
+
+		/* Hull breach! */
+		if (charsWritten < 0) error("CLIENT enc: ERROR writing to socket");
+
+		/* Verify send by waiting until send buffer is clear. */
+		int checkSend = -5; // Bytes remaining in send buffer
+		do
+		{
+			ioctl(socketFD, TIOCOUTQ, &checkSend); // Check the send buffer for this socket
+			//printf("checkSend: %d\n", checkSend); // Curiousity, check how many remaining bytes
+		}
+		while(checkSend > 0);
+
+		if(checkSend < 0) // Check if loop stopped because of an error
+			error("CLIENT enc: ioctl error");
+		else
+			printf("CLIENT enc: Send verified!\n");
+
+		/* Hull breach! */
+		if (charsWritten < 0) error("CLIENT enc: ERROR writing to socket");
+
+		/* Increment payload packet section. */
+		if (charsWritten < strlen(buffer)) 
+		{
+			printf("CLIENT enc: WARNING: Not all data written to socket!\n");
+			beginIndex += charsWritten;
+			endIndex += charsWritten;
+		}
+		else
+		{
+			beginIndex += 250;
+			endIndex += 250;
+
+			/* Make sure payload endIndex dosen't step out of bounds. */
+			/*
+			while(endIndex > payloadSize)
+			{
+
+				printf("beginIndex: %d endIndex %d\n", beginIndex, endIndex);
+				--beginIndex;
+				--endIndex;
+			}
+			*/
+
+		}
+
+	}
+
+	printf("TRACE: done sending in client\n");
+
+	/*
 	charsWritten = send(socketFD, payload, strlen(payload), 0); // Write to the server
 	if (charsWritten < 0) error("CLIENT enc: ERROR writing to socket");
 	if (charsWritten < strlen(payload)) printf("CLIENT enc: WARNING: Not all data written to socket!\n");
+	*/
 
 	/* Verify send by waiting until send buffer is clear. */
+	/*
 	int checkSend = -5; // Bytes remaining in send buffer
 	do
 	{
@@ -103,8 +176,10 @@ int main(int argc, char *argv[])
 		error("CLIENT enc: ioctl error");
 	else
 		printf("CLIENT enc: Send verified!\n");
+	*/
 
 	// Get return message from server
+	// TODO verify all bytes received, loop
 	memset(buffer, '\0', sizeof(buffer)); // Clear out the buffer again for reuse
 	charsRead = recv(socketFD, buffer, sizeof(buffer) - 1, 0); // Read data from the socket, leaving \0 at end
 	if (charsRead < 0) error("CLIENT enc: ERROR reading from socket");
