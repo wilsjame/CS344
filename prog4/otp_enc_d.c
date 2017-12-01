@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
 	/* These are from Brewster. */
 	int listenSocketFD, establishedConnectionFD, portNumber, charsRead;
 	socklen_t sizeOfClientInfo;
-	char buffer[256];
+	char buffer[256]; memset(buffer, '\0', sizeof(buffer));
 	struct sockaddr_in serverAddress, clientAddress;
 
 	/* These aren't. */
@@ -109,10 +109,18 @@ int main(int argc, char *argv[])
 
 				/* Read client's message from the socket. */ 
 				/* verify it's from otp_enc, and extract the payload, */ 
-				memset(payload, '\0', sizeof(payload));
-				charsRead = recv(establishedConnectionFD, payload, sizeof(payload) - 1, 0); 
-				if (charsRead < 0) error("SERVER enc: ERROR reading from socket");
-				printf("SERVER enc: I received this from the client: \"%s\"\n", payload);
+
+				while(strstr(payload, "!") == NULL)
+				{
+					memset(buffer, '\0', sizeof(buffer));
+					charsRead = recv(establishedConnectionFD, buffer, sizeof(buffer) - 1, 0); 
+					strcat(payload, buffer); // Append packet to payload
+					if (charsRead < 0) error("SERVER enc: ERROR reading from socket");
+					printf("SERVER enc: I received this from the client: \"%s\"\n", payload);
+				}
+				
+				int terminalLocation = strstr(payload, "!") - payload;
+				payload[terminalLocation] = '\0';
 
 				/* Verify it's from otp_enc, and extract the payload, */ 
 				extractPayload(payload, plaintext, key);
