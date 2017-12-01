@@ -70,16 +70,16 @@ int main(int argc, char *argv[])
 	serverAddress.sin_family = AF_INET; // Create a network-capable socket
 	serverAddress.sin_port = htons(portNumber); // Store the port number
 	serverHostInfo = gethostbyname("localhost"); // Convert the machine name into a special form of address
-	if (serverHostInfo == NULL) { fprintf(stderr, "CLIENT: ERROR, no such host\n"); exit(0); }
+	if (serverHostInfo == NULL) { fprintf(stderr, "CLIENT enc: ERROR, no such host\n"); exit(0); }
 	memcpy((char*)&serverAddress.sin_addr.s_addr, (char*)serverHostInfo->h_addr, serverHostInfo->h_length); // Copy in the address
 
 	/* Set up the socket. Endpoint of communication with server. */
 	socketFD = socket(AF_INET, SOCK_STREAM, 0); // Create the socket
-	if (socketFD < 0) error("CLIENT: ERROR opening socket");
+	if (socketFD < 0) error("CLIENT enc: ERROR opening socket");
 
 	/* Connect socket to the server. */
 	if (connect(socketFD, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) < 0) // Connect socket to address
-		error("CLIENT: ERROR connecting");
+		error("CLIENT enc: ERROR connecting");
 
 	/* Build message to send to server. Format: e$PLAIN TEXT*KEY TEXT! */
 	buildPayload(payload, plaintext, key);
@@ -87,8 +87,8 @@ int main(int argc, char *argv[])
 	/* Send message to server. */
 	//TODO verify all bytes are sent, loop
 	charsWritten = send(socketFD, payload, strlen(payload), 0); // Write to the server
-	if (charsWritten < 0) error("CLIENT: ERROR writing to socket");
-	if (charsWritten < strlen(payload)) printf("CLIENT: WARNING: Not all data written to socket!\n");
+	if (charsWritten < 0) error("CLIENT enc: ERROR writing to socket");
+	if (charsWritten < strlen(payload)) printf("CLIENT enc: WARNING: Not all data written to socket!\n");
 
 	/* Verify send by waiting until send buffer is clear. */
 	int checkSend = -5; // Bytes remaining in send buffer
@@ -100,15 +100,15 @@ int main(int argc, char *argv[])
 	while(checkSend > 0);
 
 	if(checkSend < 0) // Check if loop stopped because of an error
-		error("ioctl error");
+		error("CLIENT enc: ioctl error");
 	else
-		printf("Send verified!\n");
+		printf("CLIENT enc: Send verified!\n");
 
 	// Get return message from server
 	memset(buffer, '\0', sizeof(buffer)); // Clear out the buffer again for reuse
 	charsRead = recv(socketFD, buffer, sizeof(buffer) - 1, 0); // Read data from the socket, leaving \0 at end
-	if (charsRead < 0) error("CLIENT: ERROR reading from socket");
-	printf("CLIENT: I received this from the server: \"%s\"\n", buffer);
+	if (charsRead < 0) error("CLIENT enc: ERROR reading from socket");
+	printf("CLIENT enc: I received this from the server: \"%s\"\n", buffer);
 
 	close(socketFD); // Close the socket
 
@@ -141,7 +141,7 @@ void errorCheck(char* plaintextFileName, char* keyFileName, char* plaintext, cha
 	/* Compare lengths, key must be atleast as long as plaintext. */
 	if(keySize < plaintextSize)
 	{
-		fprintf(stderr, "CLIENT: ERROR, key size too small\n"); exit(1); 
+		fprintf(stderr, "CLIENT enc: ERROR, key size too small\n"); exit(1); 
 	}
 
 	/* Check plaintext file for bad characters and store file contents. */
@@ -155,7 +155,7 @@ void errorCheck(char* plaintextFileName, char* keyFileName, char* plaintext, cha
 
 			if(c == badCharacters[i])
 			{
-				fprintf(stderr, "CLIENT: ERROR, bad plaintext character\n"); exit(1); 
+				fprintf(stderr, "CLIENT enc: ERROR, bad plaintext character\n"); exit(1); 
 			}
 
 		}
