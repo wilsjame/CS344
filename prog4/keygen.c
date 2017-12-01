@@ -7,11 +7,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <string.h>
 
 main(int argc, char *argv[])
 {
 	int keyLength;
-	char key[10533]; memset(key, '\0', sizeof(key));
+	char key[100000]; memset(key, '\0', sizeof(key));
 	srand(time(NULL));
 	
 	/* Generate key. */
