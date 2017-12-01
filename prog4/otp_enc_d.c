@@ -15,6 +15,7 @@
 
 void error(const char *msg) { perror(msg); exit(1); } // Error function used for reporting issues
 void extractPayload(char* payload, char* plaintext, char* key);
+void encode(char* plaintext, char* key, char* encodedtext);
 
 /*	USAGE 
  * ./server listeningPort &
@@ -56,6 +57,7 @@ int main(int argc, char *argv[])
 	char key[100000]; memset(key, '\0', sizeof(key));
 	char plaintext[100000]; memset(plaintext, '\0', sizeof(plaintext));
 	char payload[300000]; memset(payload, '\0', sizeof(payload));
+	char encodedtext[100000]; memset(encodedtext, '\0', sizeof(encodedtext));
 	int childExitMethod;
 	int trackerSize = 0;
 	pid_t spawnPid;
@@ -113,7 +115,7 @@ int main(int argc, char *argv[])
 
 				/* Verify it's from otp_enc, and extract the payload, */ 
 				extractPayload(payload, plaintext, key);
-				//TODO encode the thing
+				encode(plaintext, key, encodedtext);
 
 				/* Send return message back to the client. */
 				charsRead = send(establishedConnectionFD, "I am the server, and I got your message", 39, 0); 
@@ -183,5 +185,72 @@ void extractPayload(char* payload, char* plaintext, char* key)
 	*/
 
 	return;
+}
+
+/* Encode the plaintext using an OTP algorithm. */
+void encode(char* plaintext, char* key, char* encodedtext)
+{
+	int i;
+	int encodedChar;
+	int plainVal, keyVal;
+	char chars[28] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ ";
+
+	printf("key       : %s\n", key);
+	printf("plaintext : %s\n", plaintext);
+	printf("------------------------------\n");
+
+	/* Encoding. */
+	for(i = 0; i < (int)strlen(plaintext); i++)
+	{
+		
+		/* Convert characters to literal alphabet indexes A = 0, B = 1, ..., ' ' = 26 */
+		if(plaintext[i] == ' ')
+		{
+			plainVal = 26;
+		}
+		else
+		{
+			plainVal = plaintext[i] - 65; // A = 65, B = 66, ...
+		}
+
+		if(key[i] == ' ')
+		{
+			keyVal = 26;
+		}
+		else
+		{
+			keyVal = key[i] - 65;
+		}
+
+		/* *** OTP algorithm ***
+		 * B AVTCJCLSJPALYBZ : key
+		 * IN THE BEGINNING  : message
+		 *
+		 * (66)B 	     : key
+		 * (73)I 	     : message
+		 *
+		 * (66+73) = (139)   : key + message
+		 *
+		 * (139)             : if key + message > 27 subtract 27 until false
+		 * (4)		     : result
+		 *
+		 * (4) % 27          : take remainder of dividing result by 27
+		 * (4)J              : ciphertext :D */
+		encodedChar = plainVal + keyVal;  
+
+		while(encodedChar > 27)
+		{
+			encodedChar -= 27;
+		}
+
+		encodedChar %= 27;
+		encodedtext[i] = chars[encodedChar];
+	}
+
+	printf("encoded   : %s\n", encodedtext);
+	printf("------------------------------\n");
+
+	return;
+
 }
 
