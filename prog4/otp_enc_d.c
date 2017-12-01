@@ -4,26 +4,12 @@
 ** Description: Program 4 - OTP CS 344 
 ** otp_enc_d.c
 ** Server side encryption.
-*********************************************************************/
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <sys/types.h> 
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <sys/ioctl.h>
-
-void error(const char *msg) { perror(msg); exit(1); } // Error function used for reporting issues
-void extractPayload(char* payload, char* plaintext, char* key);
-void encode(char* plaintext, char* key, char* encodedtext);
-
-/*	USAGE 
+**
+ *	USAGE 
  * ./server listeningPort &
  * ./otp_enc_d listeningPort &
- */
-
-/*	OUTLINE
+ *
+ *	OUTLINE
  * Output error if it cannot connect to the listening port upon execution.
  * Listen on the command line assigned port/socket.
  * When a connection is made:
@@ -44,17 +30,28 @@ void encode(char* plaintext, char* key, char* encodedtext);
  * 	Error situations, see Canvas.
  * 	Anything else on Canvas.
  *
- */
+*********************************************************************/
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/types.h> 
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <sys/ioctl.h>
+
+void error(const char *msg) { perror(msg); exit(1); } // Error function used for reporting issues
+void extractPayload(char* payload, char* plaintext, char* key);
+void encode(char* plaintext, char* key, char* encodedtext);
+
 
 int main(int argc, char *argv[])
 {
-	/* These are from Brewster. */
 	int listenSocketFD, establishedConnectionFD, portNumber, charsRead;
 	socklen_t sizeOfClientInfo;
 	char buffer[256]; memset(buffer, '\0', sizeof(buffer));
 	struct sockaddr_in serverAddress, clientAddress;
 
-	/* These aren't. */
 	char key[100000]; memset(key, '\0', sizeof(key));
 	char plaintext[100000]; memset(plaintext, '\0', sizeof(plaintext));
 	char payload[300000]; memset(payload, '\0', sizeof(payload));
@@ -92,7 +89,7 @@ int main(int argc, char *argv[])
 		 * accept() generates a new socket to be used for actual communication,
 		 * create a seperate process with fork() and use this socket to complete the transaction. */
 		sizeOfClientInfo = sizeof(clientAddress); // Get the size of the address for the client that will connect
-		establishedConnectionFD = accept(listenSocketFD, (struct sockaddr *)&clientAddress, &sizeOfClientInfo); // Accept :D
+		establishedConnectionFD = accept(listenSocketFD, (struct sockaddr *)&clientAddress, &sizeOfClientInfo); // Accept
 		if (establishedConnectionFD < 0) error("SERVER enc: ERROR on accept");
 		printf("SERVER enc: Connected Client at port %d\n", ntohs(clientAddress.sin_port));
 
@@ -104,11 +101,14 @@ int main(int argc, char *argv[])
 			case -1:
 				perror("SERVER enc: fork() failure! \n");
 				exit(1);
+
 				break;
+
 			case 0:		/* In child. */
 
-				/* Read client's message from the socket. */ 
-				/* verify it's from otp_enc, and extract the payload in packets. */ 
+				/* Read client's message from the socket.  
+				 * verify it's from otp_enc, and extract 
+				 * the payload in packets. */
 				while(strstr(payload, "!") == NULL)
 				{
 					memset(buffer, '\0', sizeof(buffer));
@@ -135,13 +135,12 @@ int main(int argc, char *argv[])
 				int charsWritten, charsWrittenTotal = 0;
 				int traceCounter = 0;
 
-				//send characters to reach payload size
-				//	copy chunk into buffer
-				//	send and get return bytes
-				//	add return byte to begin and end index
+				/* Send packets to reach payload size:
+				 * Copy packet into buffer,
+				 * send and get return bytes,
+				 * add return bytes to begin and end index. */
 				while(charsWrittenTotal < payloadSize)
 				{
-					//printf("%d", traceCounter++);
 
 					/* Copy packet into buffer and send. */
 					memset(buffer, '\0', sizeof(buffer));
@@ -163,8 +162,6 @@ int main(int argc, char *argv[])
 
 					if(checkSend < 0) // Check if loop stopped because of an error
 						error("SERVER enc: ioctl error");
-					else
-						//printf("SERVER enc: Send verified!\n");
 
 					/* Hull breach! */
 					if (charsWritten < 0) error("SERVER enc: ERROR writing to socket");
@@ -180,64 +177,28 @@ int main(int argc, char *argv[])
 					{
 						beginIndex += 250;
 						endIndex += 250;
-
-						/* Make sure payload endIndex dosen't step out of bounds. */
-						/*
-						while(endIndex > payloadSize)
-						{
-
-							printf("beginIndex: %d endIndex %d\n", beginIndex, endIndex);
-							--beginIndex;
-							--endIndex;
-						}
-						*/
-
 					}
 
 				}
 
-				printf("TRACE: done sending in server\n");
-
-				/* Send return message back to the client. */
-	/*
-				charsRead = send(establishedConnectionFD, encodedtext, strlen(encodedtext), 0); // Write to the client
-				if (charsRead < 0) error("SERVER enc: ERROR writing to socket");
-				if (charsRead < strlen(encodedtext)) printf("SERVER enc: WARNING: Not all data written to socket!\n");
-				*/
-
-				/* Verify send by waiting until send buffer is clear. */
-				/*
-				int checkSend = -5; // Bytes remaining in send buffer
-				do
-				{
-					ioctl(establishedConnectionFD, TIOCOUTQ, &checkSend); // Check the send buffer for this socket
-					//printf("checkSend: %d\n", checkSend); // Curiousity, check how many remaining bytes
-				}
-				while(checkSend > 0);
-
-				if(checkSend < 0) // Check if loop stopped because of an error
-					error("SERVER enc: ioctl error");
-				else
-					printf("SERVER enc: Send verified!\n");
-
-				*/
-
 				/* Close the existing socket which is connected to the client. */
 				close(establishedConnectionFD); 
 
-				/* Increment child counter and exit. */
-				//TODO implement some form of IPC, pipes?
-				//trackerSize++;
+				/* Increment child counter and exit.
+				 * TODO implement some form of IPC 
+				 * between child and parent, pipes? */
 
 				exit(0);
 
 				break;
+
 			default:	/* In parent. */
 
 				/* Increment child counter and exit. */
 				trackerSize++;
 
 				break;
+
 		} // End fork switch
 
 		/* Check number of conncurrent (child) sockets running is less than 5, 
@@ -276,11 +237,6 @@ void extractPayload(char* payload, char* plaintext, char* key)
 	strcpy(plaintext, strtok(NULL, "*"));
 	strcpy(key, strtok(NULL, "!"));
 
-	/*
-	printf("plaintext is: %s\n", plaintext);
-	printf("key is: %s\n", key);
-	*/
-
 	return;
 }
 
@@ -292,13 +248,14 @@ void encode(char* plaintext, char* key, char* encodedtext)
 	int plainVal, keyVal;
 	char chars[28] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ ";
 
-	
+	/* Testing. */
+	/*
 	printf("\n--- In encode() server side ---\n");
 	printf("key       : %s\n", key);
 	printf("plaintext : %s\n", plaintext);
 	printf("------------------------------\n");
+	*/
 	
-
 	/* Encoding. */
 	for(i = 0; i < (int)strlen(plaintext); i++)
 	{
@@ -347,10 +304,11 @@ void encode(char* plaintext, char* key, char* encodedtext)
 		encodedtext[i] = chars[encodedChar];
 	}
 
-	
+	/* Testing. */
+	/*
 	printf("encoded   : %s\n", encodedtext);
 	printf("------------------------------\n");
-	
+	*/
 
 	return;
 

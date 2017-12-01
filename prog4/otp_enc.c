@@ -4,6 +4,27 @@
 ** Description: Program 4 - OTP CS 344 
 ** otp_enc.c
 ** Client side encryption.
+**
+ *	USAGE
+ * ./otp_enc plaintext key port
+ *
+ * port is the port otp_enc should attempt to connect to otp_enc_d on.
+ * 
+ * ./otp_enc myplaintext mykey 57171
+ * ./otp_enc myplaintext mykey 57171 > myciphertext
+ * ./otp_enc myplaintext mykey 57171 > myciphertext &
+ *
+ *	OUTLINE
+ * This program provides the input data for the server side encryption.
+ * It receives ciphertext that it sends to stdout. 
+ *
+ * Verify the following for the command line arguments:
+ * 	Plaintext file has no bad characters.
+ * 	Key file is atleast as long as the plaintext file.
+ * 	Port given can be found. 
+ *
+ * otp_enc should NOT be able to connect to otp_dec_d!
+ *
 *********************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,34 +39,6 @@
 void error(const char *msg) { perror(msg); exit(0); } // Error function used for reporting issues
 void errorCheck(char* plaintextFileName, char* keyFileName, char* plaintext, char* key);
 void buildPayload(char* payload, char* plaintext, char* key);
-
-
-/*	USAGE
- * ./otp_enc plaintext key port
- *
- * port is the port otp_enc should attempt to connect to otp_enc_d on.
- * 
- * ./otp_enc myplaintext mykey 57171
- * ./otp_enc myplaintext mykey 57171 > myciphertext
- * ./otp_enc myplaintext mykey 57171 > myciphertext &
- *
- */
-
-/*	OUTLINE
- * This program provides the input data for the server side encryption.
- * It receives ciphertext that it sends to stdout. 
- *
- * Verify the following for the command line arguments:
- * 	Plaintext file has no bad characters.
- * 	Key file is atleast as long as the plaintext file.
- * 	Port given can be found. 
- *
- * otp_enc should NOT be able to connect to otp_dec_d!
- *
- */
-
-//TODO
-// Check if the port given cannot be found
 
 int main(int argc, char *argv[])
 {
@@ -87,19 +80,17 @@ int main(int argc, char *argv[])
 	buildPayload(payload, plaintext, key);
 
 	/* Send message to server. */
-	//TODO verify all bytes are sent, loop
 	int payloadSize = strlen(payload);
 	int beginIndex = 0, endIndex = 250;
 	int charsWrittenTotal = 0;
 	int traceCounter = 0;
 
-	//send characters to reach payload size
-	//	copy chunk into buffer
-	//	send and get return bytes
-	//	add return byte to begin and end index
+	/* Send packets to reach payload size:
+	 * Copy packet into buffer,
+	 * send and get return bytes,
+	 * add return bytes to begin and end index. */
 	while(charsWrittenTotal < payloadSize)
 	{
-		//printf("%d", traceCounter++);
 
 		/* Copy packet into buffer and send. */
 		memset(buffer, '\0', sizeof(buffer));
@@ -121,13 +112,8 @@ int main(int argc, char *argv[])
 
 		if(checkSend < 0) // Check if loop stopped because of an error
 			error("CLIENT enc: ioctl error");
-		else
-			//printf("CLIENT enc: Send verified!\n");
 
-		/* Hull breach! */
-		if (charsWritten < 0) error("CLIENT enc: ERROR writing to socket");
-
-		/* Increment payload packet section. */
+		/* Increment packet section in payload. */
 		if (charsWritten < strlen(buffer)) 
 		{
 			printf("CLIENT enc: WARNING: Not all data written to socket!\n");
@@ -138,75 +124,28 @@ int main(int argc, char *argv[])
 		{
 			beginIndex += 250;
 			endIndex += 250;
-
-			/* Make sure payload endIndex dosen't step out of bounds. */
-			/*
-			while(endIndex > payloadSize)
-			{
-
-				printf("beginIndex: %d endIndex %d\n", beginIndex, endIndex);
-				--beginIndex;
-				--endIndex;
-			}
-			*/
-
 		}
 
 	}
 
-	printf("TRACE: done sending in client\n");
-
-	/*
-	charsWritten = send(socketFD, payload, strlen(payload), 0); // Write to the server
-	if (charsWritten < 0) error("CLIENT enc: ERROR writing to socket");
-	if (charsWritten < strlen(payload)) printf("CLIENT enc: WARNING: Not all data written to socket!\n");
-	*/
-
-	/* Verify send by waiting until send buffer is clear. */
-	/*
-	int checkSend = -5; // Bytes remaining in send buffer
-	do
-	{
-		ioctl(socketFD, TIOCOUTQ, &checkSend); // Check the send buffer for this socket
-		//printf("checkSend: %d\n", checkSend); // Curiousity, check how many remaining bytes
-	}
-	while(checkSend > 0);
-
-	if(checkSend < 0) // Check if loop stopped because of an error
-		error("CLIENT enc: ioctl error");
-	else
-		printf("CLIENT enc: Send verified!\n");
-	*/
-
 	/* Clear stale payload. */
 	memset(payload, '\0', sizeof(payload));
 
-	/* Get return message from server. */
+	/* Receive return message from server. */
 	while(strstr(payload, "!") == NULL)
 	{
-		//printf("trace\n");
 		memset(buffer, '\0', sizeof(buffer));
 		charsRead = recv(socketFD, buffer, sizeof(buffer) - 1, 0); 
 		strcat(payload, buffer); // Append packet to payload
 		if (charsRead < 0) error("CLIENT enc: ERROR reading from socket");
-
-		//printf("CLIENT receiving payload: %s\n", payload);
 	}
 	
 	int terminalLocation = strstr(payload, "!") - payload;
 	payload[terminalLocation] = '\0';
 
-	printf("CLIENT enc: I received this from the server: \"%s\"\n", payload);
+	//printf("CLIENT enc: I received this from the server: \"%s\"\n", payload);
+	printf("%s", payload);
 	
-
-
-	/*
-	memset(buffer, '\0', sizeof(buffer)); // Clear out the buffer again for reuse
-	charsRead = recv(socketFD, buffer, sizeof(buffer) - 1, 0); // Read data from the socket, leaving \0 at end
-	if (charsRead < 0) error("CLIENT enc: ERROR reading from socket");
-	printf("CLIENT enc: I received this from the server: \"%s\"\n", buffer);
-	*/
-
 	close(socketFD); // Close the socket
 
 	return 0;
