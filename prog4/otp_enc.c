@@ -144,7 +144,7 @@ int main(int argc, char *argv[])
 	payload[terminalLocation] = '\0';
 
 	//printf("CLIENT enc: I received this from the server: \"%s\"\n", payload);
-	printf("%s", payload);
+	printf("%s\n", payload);
 	
 	close(socketFD); // Close the socket
 
@@ -200,6 +200,8 @@ void errorCheck(char* plaintextFileName, char* keyFileName, char* plaintext, cha
 	}
 
 	plaintext[n] = '\0';
+	plaintext[strcspn(plaintext, "\n")] = 0; // Remove trailing newline char
+
 	n = 0;
 
 	/* Store key file contents. */
@@ -209,6 +211,7 @@ void errorCheck(char* plaintextFileName, char* keyFileName, char* plaintext, cha
 	}
 
 	key[n] = '\0';
+	//key[strcspn(key, "\n")] = 0; // Remove trailing newline char
 
 	return;
 

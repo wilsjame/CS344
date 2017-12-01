@@ -137,7 +137,7 @@ int main(int argc, char *argv[])
 	payload[terminalLocation] = '\0';
 
 	//printf("CLIENT dec: I received this from the server: \"%s\"\n", payload);
-	printf("%s", payload);
+	printf("%s\n", payload);
 	
 	close(socketFD); // Close the socket
 
@@ -193,6 +193,8 @@ void errorCheck(char* ciphertextFileName, char* keyFileName, char* ciphertext, c
 	}
 
 	ciphertext[n] = '\0';
+	ciphertext[strcspn(ciphertext, "\n")] = 0; // Remove trailing newline char
+
 	n = 0;
 
 	/* Store key file contents. */
@@ -202,6 +204,7 @@ void errorCheck(char* ciphertextFileName, char* keyFileName, char* ciphertext, c
 	}
 
 	key[n] = '\0';
+	//key[strcspn(key, "\n")] = 0; // Remove trailing newline char
 
 	return;
 
