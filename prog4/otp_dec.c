@@ -210,10 +210,10 @@ void errorCheck(char* ciphertextFileName, char* keyFileName, char* ciphertext, c
 /* Build the single message to be sent to the server.
  * The following will be seperated by special characters:
  * flag character to signify the sender (this program),
- * ciphertext, and key. e$PLAIN TEXT*KEY TEXT! */
+ * ciphertext, and key. d$PLAIN TEXT*KEY TEXT! */
 void buildPayload(char* payload, char* ciphertext, char* key)
 {
-	strcpy(payload, "e");
+	strcpy(payload, "d");
 	strcat(payload, "$");
 	strcat(payload, ciphertext);
 	strcat(payload, "*");
