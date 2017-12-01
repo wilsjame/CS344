@@ -90,7 +90,7 @@ int main(int argc, char *argv[])
 		sizeOfClientInfo = sizeof(clientAddress); // Get the size of the address for the client that will connect
 		establishedConnectionFD = accept(listenSocketFD, (struct sockaddr *)&clientAddress, &sizeOfClientInfo); // Accept
 		if (establishedConnectionFD < 0) error("SERVER dec: ERROR on accept");
-		printf("SERVER dec: Connected Client at port %d\n", ntohs(clientAddress.sin_port));
+		//printf("SERVER dec: Connected Client at port %d\n", ntohs(clientAddress.sin_port));
 
 		/* Fork off child to complete the decoding transaction. */
 		spawnPid = fork();
